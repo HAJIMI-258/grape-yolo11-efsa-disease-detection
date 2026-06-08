@@ -1,0 +1,17 @@
+# Full merged grape disease detection dataset.
+path: ../merged_fine_yolo
+train: train/images
+val: val/images
+test: test/images
+names:
+  0: black_rot
+  1: downy_mildew
+  2: esca_black_measles
+  3: leaf_blight
+  4: powdery_mildew
+  5: dead_arm
+  6: anthracnose
+  7: flavescence_doree
+  8: healthy
+  9: brown_spot
+  10: mites_disease
