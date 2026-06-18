@@ -3,16 +3,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
 if REPO.exists():
     sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REMOTE))
-
-from ultralytics import YOLO
-from ultralytics.models.yolo.detect.train import DetectionTrainer
-from ultralytics.utils import LOGGER
 
 from highsource7_ap50_checkpoint import AP50CheckpointMixin
 from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
@@ -23,14 +18,15 @@ from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
 )
 from train_yolo11n_width20_gapkd_v14_highsource7_region_remote import LateFeatureGapCriterion
 
+from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.utils import LOGGER
 
-TEACHER_WEIGHTS = Path(
-    r"D:\grape_combo\runs\yolo11n_highsource7_region_ap50teacher_img640_e150\weights\best_map50.pt"
-)
+TEACHER_WEIGHTS = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_ap50teacher_img640_e150\weights\best_map50.pt")
 
 
 class GapFeatureDistillV16Trainer(AP50CheckpointMixin, DetectionTrainer):
-    """v14 schedule with an AP50-selected baseline teacher and AP50-selected student checkpoint."""
+    """V14 schedule with an AP50-selected baseline teacher and AP50-selected student checkpoint."""
 
     def set_model_attributes(self):
         super().set_model_attributes()

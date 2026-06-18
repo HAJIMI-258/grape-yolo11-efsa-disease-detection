@@ -3,17 +3,16 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
 if REPO.exists():
     sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REMOTE))
 
+from highsource7_ap50_checkpoint import AP50CheckpointMixin
+
 from ultralytics import YOLO
 from ultralytics.models.yolo.detect.train import DetectionTrainer
-
-from highsource7_ap50_checkpoint import AP50CheckpointMixin
 
 
 class AP50BaselineTrainer(AP50CheckpointMixin, DetectionTrainer):
