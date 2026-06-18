@@ -6,7 +6,6 @@ from pathlib import Path
 
 import paramiko
 
-
 HOST = os.environ.get("GRAPE_REMOTE_HOST")
 USER = os.environ.get("GRAPE_REMOTE_USER", "Administrator")
 PASSWORD = os.environ.get("GRAPE_REMOTE_PASSWORD")

@@ -3,16 +3,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
 if REPO.exists():
     sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REMOTE))
-
-from ultralytics import YOLO
-from ultralytics.models.yolo.detect.train import DetectionTrainer
-from ultralytics.utils import LOGGER
 
 from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     CLASS_KD_WEIGHTS,
@@ -22,6 +17,10 @@ from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     TEACHER_WEIGHTS,
     GapFeatureDistillCriterion,
 )
+
+from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.utils import LOGGER
 
 
 class UltraLateFeatureGapCriterion(GapFeatureDistillCriterion):
@@ -57,7 +56,7 @@ class UltraLateFeatureGapCriterion(GapFeatureDistillCriterion):
 
 
 class GapFeatureDistillV15Trainer(DetectionTrainer):
-    """v14-style conservative foreground feature distillation, delayed to epoch 95."""
+    """V14-style conservative foreground feature distillation, delayed to epoch 95."""
 
     def set_model_attributes(self):
         super().set_model_attributes()

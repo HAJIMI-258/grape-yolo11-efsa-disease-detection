@@ -7,7 +7,6 @@ from pathlib import Path
 
 import paramiko
 
-
 HOST = os.environ.get("GRAPE_REMOTE_HOST")
 USER = os.environ.get("GRAPE_REMOTE_USER", "Administrator")
 PASSWORD = os.environ.get("GRAPE_REMOTE_PASSWORD")
@@ -29,11 +28,20 @@ def main() -> None:
     uploads = [
         ("ultralytics/nn/modules/block.py", "grape-yolo11-efsa-disease-detection\\ultralytics\\nn\\modules\\block.py"),
         ("ultralytics/nn/modules/efsa.py", "grape-yolo11-efsa-disease-detection\\ultralytics\\nn\\modules\\efsa.py"),
-        ("ultralytics/nn/modules/__init__.py", "grape-yolo11-efsa-disease-detection\\ultralytics\\nn\\modules\\__init__.py"),
+        (
+            "ultralytics/nn/modules/__init__.py",
+            "grape-yolo11-efsa-disease-detection\\ultralytics\\nn\\modules\\__init__.py",
+        ),
         ("ultralytics/nn/tasks.py", "grape-yolo11-efsa-disease-detection\\ultralytics\\nn\\tasks.py"),
         ("ultralytics/utils/loss.py", "grape-yolo11-efsa-disease-detection\\ultralytics\\utils\\loss.py"),
-        ("scripts/highsource7/train_yolo11n_width20_gapkd_v12_highsource7_region_remote.py", "train_yolo11n_width20_gapkd_v12_highsource7_region_remote.py"),
-        ("scripts/highsource7/train_yolo11n_width20_gew_gapkd_highsource7_region_remote.py", "train_yolo11n_width20_gew_gapkd_highsource7_region_remote.py"),
+        (
+            "scripts/highsource7/train_yolo11n_width20_gapkd_v12_highsource7_region_remote.py",
+            "train_yolo11n_width20_gapkd_v12_highsource7_region_remote.py",
+        ),
+        (
+            "scripts/highsource7/train_yolo11n_width20_gew_gapkd_highsource7_region_remote.py",
+            "train_yolo11n_width20_gew_gapkd_highsource7_region_remote.py",
+        ),
         ("configs/models/yolo11n_width20_gew_highsource7_region.yaml", "yolo11n_width20_gew_highsource7_region.yaml"),
         ("docs/HIGHSOURCE7_FAIR_PROTOCOL.md", "highsource7_fair_protocol.md"),
     ]

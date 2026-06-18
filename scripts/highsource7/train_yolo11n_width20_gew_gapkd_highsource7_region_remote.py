@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-
 os.environ["YOLO_WIOU_ALPHA"] = "0.08"
 os.environ["YOLO_NWD_ALPHA"] = "0.0"
 
@@ -14,10 +13,6 @@ if REPO.exists():
     sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REMOTE))
 
-from ultralytics import YOLO
-from ultralytics.models.yolo.detect.train import DetectionTrainer
-from ultralytics.utils import LOGGER
-
 from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     CLASS_KD_WEIGHTS,
     CLASS_NAMES,
@@ -26,6 +21,9 @@ from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     GapFeatureDistillCriterion,
 )
 
+from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.utils import LOGGER
 
 STUDENT_CFG = Path(r"D:\grape_combo\yolo11n_width20_gew_highsource7_region.yaml")
 
@@ -53,8 +51,7 @@ class GEWGapDistillTrainer(DetectionTrainer):
             gt_expand=1.40,
         )
         LOGGER.info(
-            "Width20 GEW-GapKD enabled: GSConvns/VoVGSCSPns neck, ESSE detect inputs, "
-            "YOLO_WIOU_ALPHA=%s, teacher=%s",
+            "Width20 GEW-GapKD enabled: GSConvns/VoVGSCSPns neck, ESSE detect inputs, YOLO_WIOU_ALPHA=%s, teacher=%s",
             os.environ.get("YOLO_WIOU_ALPHA"),
             TEACHER_WEIGHTS,
         )

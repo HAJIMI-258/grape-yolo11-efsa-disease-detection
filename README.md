@@ -127,10 +127,10 @@ See:
 
 Report at least:
 
-| Model | Params | FLOPs | FPS | Precision | Recall | AP50 | AP75 | mAP50:95 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| YOLO11n baseline | - | - | - | - | - | - | - | - |
-| Grape-EFSA-YOLO11n | - | - | - | - | - | - | - | - |
+| Model              | Params | FLOPs | FPS | Precision | Recall | AP50 | AP75 | mAP50:95 |
+| ------------------ | -----: | ----: | --: | --------: | -----: | ---: | ---: | -------: |
+| YOLO11n baseline   |      - |     - |   - |         - |      - |    - |    - |        - |
+| Grape-EFSA-YOLO11n |      - |     - |   - |         - |      - |    - |    - |        - |
 
 ## License
 

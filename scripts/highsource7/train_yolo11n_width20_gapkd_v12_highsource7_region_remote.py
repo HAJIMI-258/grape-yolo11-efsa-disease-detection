@@ -6,7 +6,6 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-
 REPO = Path(r"D:\grape_combo\grape-yolo11-efsa-disease-detection")
 if REPO.exists():
     sys.path.insert(0, str(REPO))
@@ -14,7 +13,6 @@ if REPO.exists():
 from ultralytics import YOLO
 from ultralytics.models.yolo.detect.train import DetectionTrainer
 from ultralytics.utils import LOGGER
-
 
 TEACHER_WEIGHTS = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_fast_img640_e150\weights\best.pt")
 STUDENT_CFG = Path(r"D:\grape_combo\yolo11n_width20_highsource7.yaml")
@@ -45,7 +43,7 @@ def _select_o2m(preds):
 
 
 class GapFeatureDistillCriterion:
-    """v1 head KD plus foreground-only P3/P4 spatial feature distillation."""
+    """V1 head KD plus foreground-only P3/P4 spatial feature distillation."""
 
     def __init__(
         self,

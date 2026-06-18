@@ -3,16 +3,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
 if REPO.exists():
     sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REMOTE))
-
-from ultralytics import YOLO
-from ultralytics.models.yolo.detect.train import DetectionTrainer
-from ultralytics.utils import LOGGER
 
 from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     CLASS_KD_WEIGHTS,
@@ -23,9 +18,13 @@ from train_yolo11n_width20_gapkd_v12_highsource7_region_remote import (
     GapFeatureDistillCriterion,
 )
 
+from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.utils import LOGGER
+
 
 class GapFeatureDistillV13Trainer(DetectionTrainer):
-    """v1 head KD with a very light P3/P4 feature term."""
+    """V1 head KD with a very light P3/P4 feature term."""
 
     def set_model_attributes(self):
         super().set_model_attributes()

@@ -17,15 +17,15 @@ This file locks the main-table protocol for the grape disease detection experime
 - Early stopping: disabled with `patience=0`
 - Base detection loss weights: `box=8.0`, `cls=0.65`, `dfl=1.7`
 - Augmentation:
-  - `mosaic=0.45`
-  - `mixup=0.0`
-  - `copy_paste=0.0`
-  - `close_mosaic=20`
-  - default HSV / flip / translate / scale from the same Ultralytics config
+    - `mosaic=0.45`
+    - `mixup=0.0`
+    - `copy_paste=0.0`
+    - `close_mosaic=20`
+    - default HSV / flip / translate / scale from the same Ultralytics config
 - Validation:
-  - same split
-  - same `imgsz=640`
-  - same NMS / confidence defaults from the training validator
+    - same split
+    - same `imgsz=640`
+    - same NMS / confidence defaults from the training validator
 
 ## Allowed Method Changes
 
@@ -45,21 +45,21 @@ This file locks the main-table protocol for the grape disease detection experime
 
 ## Current Reference Runs
 
-| Run | Params | GFLOPs | Best mAP50 | Best mAP50-95 | Notes |
-| --- | ---: | ---: | ---: | ---: | --- |
-| `yolo11n_highsource7_region_fast_img640_e150` | 2.591M | 6.3 | 0.96878 | 0.81389 | Full YOLO11n baseline |
-| `yolo11n_gapkd_full_highsource7_region_img640_e150` | 2.591M | 6.3 | failed | failed | Full YOLO11n + conservative teacher KD; stopped after CUDA OOM fallback and Windows page-file error |
-| `yolo11n_width20_kd_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.94158 | 0.78245 | 1.2M student + head KD |
-| `yolo11n_width20_kdattn_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.93833 | 0.77971 | All-map feature-attention KD; worse than head KD, not main line |
-| `yolo11n_width20_gapkd_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.95429 | 0.79007 | Gap-aware weak-class KD + teacher foreground response |
-| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150` | 1.218M | 4.44 | stopped | stopped | Residual-gap balanced KD; stopped because early AP trailed v1 clearly |
-| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.92250 | 0.76927 | Hard-negative suppression damaged weak classes; not a main line |
-| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150` | 1.218M | 4.44 | stopped | stopped | Positive-only class KD hurt convergence after epoch 30; not a main line |
-| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.95154 | 0.79536 | v1 head KD plus P3/P4 foreground feature KD; improves AP50-95 but AP50 trails v1 |
-| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.94982 | 0.78666 | v1.2 with weaker full-run feature KD weight 0.02; does not beat v1 |
-| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.95802 | 0.78727 | v1 head KD plus late-ramped P3/P4 foreground feature KD from epoch 80; current AP50-leading 1.2M run |
-| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M | 4.44 | running | running | v14-style method with ultra-late feature KD from epoch 95 to further protect classification convergence |
-| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M | 4.2 | 0.93874 | 0.77381 | GEW-YOLO migration; completed but rejected because AP50 trails v14 by 1.93 points and weak classes degrade |
+| Run                                                        | Params | GFLOPs | Best mAP50 | Best mAP50-95 | Notes                                                                                                      |
+| ---------------------------------------------------------- | -----: | -----: | ---------: | ------------: | ---------------------------------------------------------------------------------------------------------- |
+| `yolo11n_highsource7_region_fast_img640_e150`              | 2.591M |    6.3 |    0.96878 |       0.81389 | Full YOLO11n baseline                                                                                      |
+| `yolo11n_gapkd_full_highsource7_region_img640_e150`        | 2.591M |    6.3 |     failed |        failed | Full YOLO11n + conservative teacher KD; stopped after CUDA OOM fallback and Windows page-file error        |
+| `yolo11n_width20_kd_highsource7_region_img640_e150`        | 1.218M |   4.44 |    0.94158 |       0.78245 | 1.2M student + head KD                                                                                     |
+| `yolo11n_width20_kdattn_highsource7_region_img640_e150`    | 1.218M |   4.44 |    0.93833 |       0.77971 | All-map feature-attention KD; worse than head KD, not main line                                            |
+| `yolo11n_width20_gapkd_highsource7_region_img640_e150`     | 1.218M |   4.44 |    0.95429 |       0.79007 | Gap-aware weak-class KD + teacher foreground response                                                      |
+| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150`  | 1.218M |   4.44 |    stopped |       stopped | Residual-gap balanced KD; stopped because early AP trailed v1 clearly                                      |
+| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.92250 |       0.76927 | Hard-negative suppression damaged weak classes; not a main line                                            |
+| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150` | 1.218M |   4.44 |    stopped |       stopped | Positive-only class KD hurt convergence after epoch 30; not a main line                                    |
+| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95154 |       0.79536 | v1 head KD plus P3/P4 foreground feature KD; improves AP50-95 but AP50 trails v1                           |
+| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.94982 |       0.78666 | v1.2 with weaker full-run feature KD weight 0.02; does not beat v1                                         |
+| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95802 |       0.78727 | v1 head KD plus late-ramped P3/P4 foreground feature KD from epoch 80; current AP50-leading 1.2M run       |
+| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M |   4.44 |    running |       running | v14-style method with ultra-late feature KD from epoch 95 to further protect classification convergence    |
+| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M |    4.2 |    0.93874 |       0.77381 | GEW-YOLO migration; completed but rejected because AP50 trails v14 by 1.93 points and weak classes degrade |
 
 ## Next Decisions
 
