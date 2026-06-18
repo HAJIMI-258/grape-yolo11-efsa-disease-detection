@@ -426,6 +426,56 @@ class C3Ghost(C3):
         self.m = nn.Sequential(*(GhostBottleneck(c_, c_) for _ in range(n)))
 
 
+class StarBlock(nn.Module):
+    """Star operation block adapted for compact convolutional feature refinement."""
+
+    def __init__(self, c: int, mlp_ratio: float = 2.0, k: int = 7, init_scale: float = 0.1):
+        """Initialize a StarBlock.
+
+        Args:
+            c (int): Input and output channels.
+            mlp_ratio (float): Hidden expansion ratio for the two pointwise branches.
+            k (int): Depthwise kernel size.
+            init_scale (float): Initial residual scale for stable insertion into pretrained models.
+        """
+        super().__init__()
+        c_ = max(int(c * mlp_ratio), 1)
+        self.dwconv = Conv(c, c, k, 1, g=c)
+        self.f1 = Conv(c, c_, 1, 1, act=False)
+        self.f2 = Conv(c, c_, 1, 1, act=False)
+        self.g = Conv(c_, c, 1, 1)
+        self.dwconv2 = Conv(c, c, k, 1, g=c, act=False)
+        self.act = nn.ReLU6(inplace=True)
+        self.gamma = nn.Parameter(torch.tensor(float(init_scale)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply star-operation refinement."""
+        y = self.dwconv(x)
+        y = self.act(self.f1(y)) * self.f2(y)
+        y = self.dwconv2(self.g(y))
+        return x + self.gamma.clamp(0.0, 1.0) * y
+
+
+class C3Star(C3):
+    """C3 wrapper using StarBlock modules for narrow-channel feature refinement."""
+
+    def __init__(
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        shortcut: bool = True,
+        mlp_ratio: float = 2.0,
+        k: int = 7,
+        e: float = 0.5,
+        init_scale: float = 0.1,
+    ):
+        """Initialize C3Star."""
+        super().__init__(c1, c2, n, shortcut, 1, e)
+        c_ = int(c2 * e)
+        self.m = nn.Sequential(*(StarBlock(c_, mlp_ratio=mlp_ratio, k=k, init_scale=init_scale) for _ in range(n)))
+
+
 class GhostBottleneck(nn.Module):
     """Ghost Bottleneck https://github.com/huawei-noah/Efficient-AI-Backbones."""
 
