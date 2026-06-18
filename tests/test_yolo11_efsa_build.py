@@ -8,7 +8,6 @@ import torch
 from ultralytics import YOLO
 from ultralytics.nn.modules import BiFPNFuse, CARAFEUp, CoordECA, EFSAEnhance
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
