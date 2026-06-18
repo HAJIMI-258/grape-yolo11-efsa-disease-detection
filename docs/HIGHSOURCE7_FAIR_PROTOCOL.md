@@ -45,30 +45,30 @@ This file locks the same-start architecture-comparison protocol for the grape di
 
 ## Current Same-Start Reference Runs
 
-| Run                                                        | Params | GFLOPs | Best mAP50 | Best mAP50-95 | Notes                                                                                                      |
-| ---------------------------------------------------------- | -----: | -----: | ---------: | ------------: | ---------------------------------------------------------------------------------------------------------- |
-| `yolo11n_highsource7_region_fast_img640_e150`              | 2.591M |    6.3 |    0.96878 |       0.81389 | Full YOLO11n baseline                                                                                      |
-| `yolo11n_gapkd_full_highsource7_region_img640_e150`        | 2.591M |    6.3 |     failed |        failed | Full YOLO11n + conservative teacher KD; stopped after CUDA OOM fallback and Windows page-file error        |
-| `yolo11n_width20_kd_highsource7_region_img640_e150`        | 1.218M |   4.44 |    0.94158 |       0.78245 | 1.2M student + head KD                                                                                     |
-| `yolo11n_width20_kdattn_highsource7_region_img640_e150`    | 1.218M |   4.44 |    0.93833 |       0.77971 | All-map feature-attention KD; worse than head KD, not main line                                            |
-| `yolo11n_width20_gapkd_highsource7_region_img640_e150`     | 1.218M |   4.44 |    0.95429 |       0.79007 | Gap-aware weak-class KD + teacher foreground response                                                      |
-| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150`  | 1.218M |   4.44 |    stopped |       stopped | Residual-gap balanced KD; stopped because early AP trailed v1 clearly                                      |
-| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.92250 |       0.76927 | Hard-negative suppression damaged weak classes; not a main line                                            |
-| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150` | 1.218M |   4.44 |    stopped |       stopped | Positive-only class KD hurt convergence after epoch 30; not a main line                                    |
-| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95154 |       0.79536 | v1 head KD plus P3/P4 foreground feature KD; improves AP50-95 but AP50 trails v1                           |
-| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.94982 |       0.78666 | v1.2 with weaker full-run feature KD weight 0.02; does not beat v1                                         |
-| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95802 |       0.78727 | v1 head KD plus late-ramped P3/P4 foreground feature KD from epoch 80; current same-start AP50 leader      |
-| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M |   4.44 |    running |       running | v14-style method with ultra-late feature KD from epoch 95                                                   |
-| `yolo11n_width20_gapkd_v16_ap50teacher_img640_e150`        | 1.218M |   4.44 |    0.94957 |       0.78959 | AP50-best YOLO11n teacher was worse than the original mAP50-95-best teacher; line rejected                 |
-| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M |    4.2 |    0.93874 |       0.77381 | GEW migration; rejected because AP50 trails v14 and weak classes degrade                                   |
+| Run                                                        | Params | GFLOPs | Best mAP50 | Best mAP50-95 | Notes                                                                                                 |
+| ---------------------------------------------------------- | -----: | -----: | ---------: | ------------: | ----------------------------------------------------------------------------------------------------- |
+| `yolo11n_highsource7_region_fast_img640_e150`              | 2.591M |    6.3 |    0.96878 |       0.81389 | Full YOLO11n baseline                                                                                 |
+| `yolo11n_gapkd_full_highsource7_region_img640_e150`        | 2.591M |    6.3 |     failed |        failed | Full YOLO11n + conservative teacher KD; stopped after CUDA OOM fallback and Windows page-file error   |
+| `yolo11n_width20_kd_highsource7_region_img640_e150`        | 1.218M |   4.44 |    0.94158 |       0.78245 | 1.2M student + head KD                                                                                |
+| `yolo11n_width20_kdattn_highsource7_region_img640_e150`    | 1.218M |   4.44 |    0.93833 |       0.77971 | All-map feature-attention KD; worse than head KD, not main line                                       |
+| `yolo11n_width20_gapkd_highsource7_region_img640_e150`     | 1.218M |   4.44 |    0.95429 |       0.79007 | Gap-aware weak-class KD + teacher foreground response                                                 |
+| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150`  | 1.218M |   4.44 |    stopped |       stopped | Residual-gap balanced KD; stopped because early AP trailed v1 clearly                                 |
+| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.92250 |       0.76927 | Hard-negative suppression damaged weak classes; not a main line                                       |
+| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150` | 1.218M |   4.44 |    stopped |       stopped | Positive-only class KD hurt convergence after epoch 30; not a main line                               |
+| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95154 |       0.79536 | v1 head KD plus P3/P4 foreground feature KD; improves AP50-95 but AP50 trails v1                      |
+| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.94982 |       0.78666 | v1.2 with weaker full-run feature KD weight 0.02; does not beat v1                                    |
+| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M |   4.44 |    0.95802 |       0.78727 | v1 head KD plus late-ramped P3/P4 foreground feature KD from epoch 80; current same-start AP50 leader |
+| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M |   4.44 |    running |       running | v14-style method with ultra-late feature KD from epoch 95                                             |
+| `yolo11n_width20_gapkd_v16_ap50teacher_img640_e150`        | 1.218M |   4.44 |    0.94957 |       0.78959 | AP50-best YOLO11n teacher was worse than the original mAP50-95-best teacher; line rejected            |
+| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M |    4.2 |    0.93874 |       0.77381 | GEW migration; rejected because AP50 trails v14 and weak classes degrade                              |
 
 ## Teacher-Assisted Structured-Compression Track
 
 This track is separate from the same-start table. It may initialize the 1.218M student from the trained YOLO11n baseline by width-aware channel inheritance, then fine-tune it with a stronger teacher. The final deployment model remains 1.218M / 4.44 GFLOPs, but the training procedure uses a pre-existing full model and must be disclosed as compression rather than a same-start architecture comparison.
 
-| Run | Deployment Params | Deployment GFLOPs | Status | Method |
-| --- | ---: | ---: | --- | --- |
-| `yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150` | 1.218M | 4.44 | pending | Width-aware inheritance from trained YOLO11n + YOLO11s teacher + v14 late foreground GapKD |
+| Run                                                                               | Deployment Params | Deployment GFLOPs | Status  | Method                                                                                     |
+| --------------------------------------------------------------------------------- | ----------------: | ----------------: | ------- | ------------------------------------------------------------------------------------------ |
+| `yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150` |            1.218M |              4.44 | pending | Width-aware inheritance from trained YOLO11n + YOLO11s teacher + v14 late foreground GapKD |
 
 V17 run order:
 

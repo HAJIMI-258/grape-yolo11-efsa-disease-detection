@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import torch
 from torch import nn
@@ -39,12 +39,7 @@ def _is_incompatible_classifier_output(
     """Avoid copying final class logits when source and target class counts differ."""
     if target_num_classes is None or target.ndim == 0 or source.ndim == 0:
         return False
-    is_cls_head = (
-        key.startswith("cv3.")
-        or ".cv3." in key
-        or key.startswith("one2one_cv3.")
-        or ".one2one_cv3." in key
-    )
+    is_cls_head = key.startswith("cv3.") or ".cv3." in key or key.startswith("one2one_cv3.") or ".one2one_cv3." in key
     if not is_cls_head:
         return False
     return target.shape[0] == target_num_classes and source.shape[0] != target.shape[0]
@@ -89,14 +84,12 @@ def inherit_narrow_model_weights(
 ) -> SlimInheritanceStats:
     """Initialize a topology-compatible narrow model from a wider checkpoint.
 
-    The HighSource7 width-0.20 student keeps the YOLO11n layer topology but uses
-    fewer channels. Standard ``load_state_dict`` rejects most useful tensors
-    because their channel dimensions differ. This routine copies the common
-    channel prefix for Conv/BN/head tensors while preserving target-only values.
+    The HighSource7 width-0.20 student keeps the YOLO11n layer topology but uses fewer channels. Standard
+    ``load_state_dict`` rejects most useful tensors because their channel dimensions differ. This routine copies the
+    common channel prefix for Conv/BN/head tensors while preserving target-only values.
 
-    The method is intended for structured compression experiments. When the
-    source is a dataset-trained baseline, report that initialization explicitly;
-    it is not a same-start architecture comparison.
+    The method is intended for structured compression experiments. When the source is a dataset-trained baseline, report
+    that initialization explicitly; it is not a same-start architecture comparison.
     """
     source_state = source_model.float().state_dict()
     target_state = target_model.state_dict()

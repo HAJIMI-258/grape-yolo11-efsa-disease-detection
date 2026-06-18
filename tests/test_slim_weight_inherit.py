@@ -10,9 +10,7 @@ class _ToyDetector(nn.Module):
     def __init__(self, channels: int, classes: int):
         super().__init__()
         self.stem = nn.Sequential(nn.Conv2d(3, channels, 3, bias=False), nn.BatchNorm2d(channels))
-        self.cv3 = nn.ModuleList(
-            [nn.Sequential(nn.Conv2d(channels, channels, 1), nn.Conv2d(channels, classes, 1))]
-        )
+        self.cv3 = nn.ModuleList([nn.Sequential(nn.Conv2d(channels, channels, 1), nn.Conv2d(channels, classes, 1))])
 
 
 def test_narrow_weight_inheritance_copies_common_channels_and_skips_wrong_class_head():
