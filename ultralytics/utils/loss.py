@@ -118,6 +118,7 @@ class BboxLoss(nn.Module):
         self.nwd_alpha = max(0.0, min(1.0, float(os.getenv("YOLO_NWD_ALPHA", "0.0"))))
         self.nwd_constant = max(1e-6, float(os.getenv("YOLO_NWD_CONSTANT", "12.8")))
         self.nwd_small_area = max(0.0, float(os.getenv("YOLO_NWD_SMALL_AREA", "1.0")))
+        self.wiou_alpha = max(0.0, min(1.0, float(os.getenv("YOLO_WIOU_ALPHA", "0.0"))))
 
     def forward(
         self,
@@ -135,6 +136,21 @@ class BboxLoss(nn.Module):
         weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
+        if self.wiou_alpha > 0:
+            pred_fg = pred_bboxes[fg_mask]
+            target_fg = target_bboxes[fg_mask]
+            pred_xy = (pred_fg[:, :2] + pred_fg[:, 2:]) * 0.5
+            target_xy = (target_fg[:, :2] + target_fg[:, 2:]) * 0.5
+            c_x1 = torch.minimum(pred_fg[:, 0], target_fg[:, 0])
+            c_y1 = torch.minimum(pred_fg[:, 1], target_fg[:, 1])
+            c_x2 = torch.maximum(pred_fg[:, 2], target_fg[:, 2])
+            c_y2 = torch.maximum(pred_fg[:, 3], target_fg[:, 3])
+            center_dist = (pred_xy - target_xy).pow(2).sum(1, keepdim=True)
+            c_diag = (c_x2 - c_x1).pow(2).unsqueeze(-1) + (c_y2 - c_y1).pow(2).unsqueeze(-1) + 1e-7
+            rw = torch.exp(center_dist / c_diag).detach()
+            plain_iou = bbox_iou(pred_fg, target_fg, xywh=False, CIoU=False).clamp(0, 1)
+            loss_wiou = (rw * (1.0 - plain_iou) * weight).sum() / target_scores_sum
+            loss_iou = (1.0 - self.wiou_alpha) * loss_iou + self.wiou_alpha * loss_wiou
         if self.nwd_alpha > 0:
             stride_values = stride.squeeze(-1)
             if stride_values.ndim == 1:

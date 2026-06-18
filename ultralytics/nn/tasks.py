@@ -52,8 +52,10 @@ from ultralytics.nn.modules import (
     Detect,
     DWConv,
     DWConvTranspose2d,
+    ESSE,
     EFSAEnhance,
     Focus,
+    GSConvns,
     GhostBottleneck,
     GhostConv,
     HGBlock,
@@ -74,6 +76,7 @@ from ultralytics.nn.modules import (
     Segment26,
     SemanticSegment,
     TorchVision,
+    VoVGSCSPns,
     WorldDetect,
     YOLOEDetect,
     YOLOESegment,
@@ -1683,6 +1686,7 @@ def parse_model(d, ch, verbose=True):
             Classify,
             Conv,
             ConvTranspose,
+            GSConvns,
             GhostConv,
             Bottleneck,
             GhostBottleneck,
@@ -1707,6 +1711,7 @@ def parse_model(d, ch, verbose=True):
             C3TR,
             C3Ghost,
             C3Star,
+            VoVGSCSPns,
             torch.nn.ConvTranspose2d,
             DWConvTranspose2d,
             C3x,
@@ -1729,6 +1734,7 @@ def parse_model(d, ch, verbose=True):
             C3TR,
             C3Ghost,
             C3Star,
+            VoVGSCSPns,
             C3x,
             RepC3,
             C2fPSA,
@@ -1784,7 +1790,7 @@ def parse_model(d, ch, verbose=True):
             c2 = args[1] if args[3] else args[1] * 4
         elif m is torch.nn.BatchNorm2d:
             args = [ch[f]]
-        elif m in frozenset({EFSAEnhance, CARAFEUp, CoordECA}):
+        elif m in frozenset({EFSAEnhance, CARAFEUp, CoordECA, ESSE}):
             c2 = ch[f]
             args = [c2, *args]
         elif m is BiFPNFuse:

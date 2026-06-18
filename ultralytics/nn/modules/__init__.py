@@ -48,6 +48,7 @@ from .block import (
     CBFuse,
     CBLinear,
     ContrastiveHead,
+    GSConvns,
     GhostBottleneck,
     HGBlock,
     HGStem,
@@ -60,6 +61,7 @@ from .block import (
     ResNetLayer,
     SCDown,
     TorchVision,
+    VoVGSCSPns,
 )
 from .conv import (
     CBAM,
@@ -77,7 +79,7 @@ from .conv import (
     RepConv,
     SpatialAttention,
 )
-from .efsa import CARAFEUp, BiFPNFuse, CoordECA, EFSAEnhance
+from .efsa import CARAFEUp, BiFPNFuse, CoordECA, ESSE, EFSAEnhance
 from .head import (
     OBB,
     OBB26,
@@ -161,8 +163,10 @@ __all__ = (
     "DeformableTransformerDecoder",
     "DeformableTransformerDecoderLayer",
     "Detect",
+    "ESSE",
     "EFSAEnhance",
     "Focus",
+    "GSConvns",
     "GhostBottleneck",
     "GhostConv",
     "HGBlock",
@@ -190,6 +194,7 @@ __all__ = (
     "SemanticSegment",
     "SpatialAttention",
     "TorchVision",
+    "VoVGSCSPns",
     "TransformerBlock",
     "TransformerEncoderLayer",
     "TransformerLayer",

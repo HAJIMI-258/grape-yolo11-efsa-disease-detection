@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,6 +38,8 @@ __all__ = (
     "C2fCIB",
     "C2fPSA",
     "C3Ghost",
+    "C3Star",
+    "GSConvns",
     "C3k2",
     "C3x",
     "CBFuse",
@@ -52,6 +56,7 @@ __all__ = (
     "ResNetLayer",
     "SCDown",
     "TorchVision",
+    "VoVGSCSPns",
 )
 
 
@@ -424,6 +429,59 @@ class C3Ghost(C3):
         super().__init__(c1, c2, n, shortcut, g, e)
         c_ = int(c2 * e)  # hidden channels
         self.m = nn.Sequential(*(GhostBottleneck(c_, c_) for _ in range(n)))
+
+
+class GSConvns(nn.Module):
+    """Group-shuffle convolution with depthwise neighborhood sampling for slim neck fusion."""
+
+    def __init__(self, c1: int, c2: int, k: int = 1, s: int = 1, e: float = 0.5):
+        """Initialize GSConvns.
+
+        The module follows the Slim-Neck/GEW-YOLO idea: part of the output is
+        produced by a standard convolution and the rest by a cheap depthwise
+        neighborhood branch, then channels are shuffled to mix information.
+        """
+        super().__init__()
+        c_ = max(1, min(int(c2 * e), c2))
+        self.primary = Conv(c1, c_, k, s)
+        if c2 > c_:
+            groups = max(math.gcd(c_, c2 - c_), 1)
+            self.cheap = Conv(c_, c2 - c_, 5, 1, g=groups)
+        else:
+            self.cheap = nn.Identity()
+
+    @staticmethod
+    def _channel_shuffle(x: torch.Tensor) -> torch.Tensor:
+        b, c, h, w = x.shape
+        if c % 2:
+            return x
+        return x.reshape(b, 2, c // 2, h, w).permute(0, 2, 1, 3, 4).reshape(b, c, h, w)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply primary and cheap branches with channel shuffle."""
+        y = self.primary(x)
+        if isinstance(self.cheap, nn.Identity):
+            return y
+        return self._channel_shuffle(torch.cat((y, self.cheap(y)), 1))
+
+
+class VoVGSCSPns(nn.Module):
+    """VoV-GSCSP neck block using GSConvns for lightweight feature fusion."""
+
+    def __init__(self, c1: int, c2: int, n: int = 1, shortcut: bool = False, e: float = 0.5):
+        """Initialize VoVGSCSPns."""
+        super().__init__()
+        c_ = max(8, int(c2 * e))
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c1, c_, 1, 1)
+        self.blocks = nn.Sequential(*(GSConvns(c_, c_, 3, 1) for _ in range(n)))
+        self.cv3 = Conv(2 * c_, c2, 1, 1)
+        self.shortcut = shortcut and c1 == c2
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Fuse preserved and GSConvns-refined branches."""
+        y = self.cv3(torch.cat((self.blocks(self.cv1(x)), self.cv2(x)), 1))
+        return x + y if self.shortcut else y
 
 
 class StarBlock(nn.Module):

@@ -59,6 +59,7 @@ This file locks the main-table protocol for the grape disease detection experime
 | `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.94982 | 0.78666 | v1.2 with weaker full-run feature KD weight 0.02; does not beat v1 |
 | `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M | 4.44 | 0.95802 | 0.78727 | v1 head KD plus late-ramped P3/P4 foreground feature KD from epoch 80; current AP50-leading 1.2M run |
 | `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M | 4.44 | running | running | v14-style method with ultra-late feature KD from epoch 95 to further protect classification convergence |
+| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M | 4.2 | running | running | GEW-YOLO migration: GSConvns/VoVGSCSPns slim neck, ESSE detect-input attention, WIoU alpha 0.08, v1 head GapKD |
 
 ## Next Decisions
 
@@ -67,3 +68,13 @@ This file locks the main-table protocol for the grape disease detection experime
 3. Keep `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` as the AP50-95-leading 1.2M auxiliary run.
 4. Continue only conservative variants of v1/v14: positive foreground feature distillation, no hard-negative suppression.
 5. Run v15 because v14 is within roughly 0.08 AP50 points of the "less than 1 point AP50 drop" target versus the full YOLO11n baseline.
+
+## GEW-YOLO Paper Migration
+
+The 2025 Scientific Reports ship-detection paper `41598_2025_Article_21887.pdf` reports a GEW-YOLO variant based on YOLOv8n with:
+
+- GSConvns and VoVGSCSPns for a lightweight slim neck.
+- ESSE semantic-spatial enhancement attention.
+- Wise-IoU for box regression.
+
+The paper reports `1.2M` parameters and `99.1` mAP50 on SeaShips, but this is not directly transferable as a result claim because SeaShips is easier than fine-grained grape disease spot detection. The transferable design is the slim-neck structure and ESSE attention. The first grape migration keeps the fixed HighSource7 protocol and tests the modules as `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150`.
