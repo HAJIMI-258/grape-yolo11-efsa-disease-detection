@@ -1,59 +1,55 @@
 # V17 Strong-Teacher Slim-Initialization Experiment
 
-## Purpose
+## Status
 
-V14 is the strongest strict same-start 1.218M run (`AP50=0.95802`) but remains below the full YOLO11n baseline (`0.96878`). V17 changes the problem from a same-start architecture comparison to explicit teacher-assisted structured compression:
+**Completed and rejected as a main-line method. Do not continue this branch.**
 
-1. Train a stronger YOLO11s teacher on the unchanged HighSource7 split and `imgsz=640`.
-2. Initialize the existing 1.218M width-0.20 student from the trained YOLO11n baseline by copying the common channel prefix throughout the topology.
-3. Fine-tune the inherited student with the proven v14 head KD and late P3/P4 foreground feature KD.
+V17 tested whether a stronger YOLO11s teacher and width-aware inheritance from the trained YOLO11n baseline could recover the accuracy lost by the 1.2M student.
 
-The deployment architecture does not change: `1.218M` parameters and `4.44` GFLOPs. The additional models are training-only.
+## Method
 
-## Files
+1. Train a YOLO11s teacher on the unchanged HighSource7 split and `imgsz=640`.
+2. Initialize the existing width-0.20 student by copying compatible channel prefixes from the trained YOLO11n baseline.
+3. Fine-tune the inherited student with the v14 head GapKD and late P3/P4 foreground feature distillation.
 
-- `scripts/highsource7/slim_weight_inherit.py`
-- `scripts/highsource7/train_yolo11s_teacher_highsource7_region_remote.py`
-- `scripts/highsource7/train_yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_remote.py`
-- `tests/test_slim_weight_inherit.py`
+The deployment model remained unchanged at `1,213,351` parameters and `4.3` GFLOPs.
 
-## Run Order
+## Final Result
 
-From the repository root on the RTX 3090 host:
+| Metric | V17 result |
+| --- | ---: |
+| Best AP50 | `0.95077` at epoch 137 |
+| Best mAP50-95 | `0.78909` at epoch 136 |
+| Final AP50 | `0.94844` |
+| Final mAP50-95 | `0.78463` |
+| Fused parameters | `1,213,351` |
+| GFLOPs | `4.3` |
+| Inference | `1.0 ms/img` |
+| Exit status | code `0`, no stderr |
 
-```powershell
-$env:PYTHONPATH="D:\grape_combo\grape-yolo11-efsa-disease-detection;D:\grape_combo"
-D:\Python311\python.exe scripts\highsource7\train_yolo11s_teacher_highsource7_region_remote.py
-```
+Weak-class AP50 at the selected validation result:
 
-The default strong-teacher initialization path is `D:\grape_mypfe6\yolo11s.pt`. Override it when necessary:
+| Class | AP50 |
+| --- | ---: |
+| `healthy` | `0.896` |
+| `brown_spot` | `0.904` |
+| `mites_disease` | `0.917` |
 
-```powershell
-$env:GRAPE_YOLO11S_WEIGHTS="D:\models\yolo11s.pt"
-```
+## Comparison
 
-After the teacher completes, inspect its AP50 and weak-class AP values. Do not run the student unless the teacher exceeds the YOLO11n baseline AP50 or gives materially better `healthy`, `brown_spot`, `downy_mildew`, and `mites_disease` AP.
+| Run | AP50 | Difference from v14 |
+| --- | ---: | ---: |
+| v14 | `0.95802` | — |
+| v17 | `0.95077` | `-0.00725` |
 
-Then run:
+The YOLO11s teacher exceeded the YOLO11n baseline by only `0.00020` AP50, so it did not provide a materially stronger supervisory signal. Width-aware prefix inheritance also appears to have constrained the narrow student to a subspace that did not preserve the discriminative cues required by `healthy`, `brown_spot`, and `mites_disease`.
 
-```powershell
-$env:GRAPE_SLIM_INIT_WEIGHTS="D:\grape_combo\runs\yolo11n_highsource7_region_fast_img640_e150\weights\best.pt"
-$env:GRAPE_STRONG_TEACHER_WEIGHTS="D:\grape_combo\runs\yolo11s_highsource7_teacher_img640_e150\weights\best.pt"
-$env:GRAPE_TEACHER_CHUNK="16"
-D:\Python311\python.exe scripts\highsource7\train_yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_remote.py
-```
+## Conclusion
 
-If teacher inference exceeds GPU memory, lower `GRAPE_TEACHER_CHUNK` to `8`. This changes only teacher forward micro-batching and does not change the student batch of 64.
+V17 does not satisfy the target that the 1.2M model must equal or exceed the YOLO11n baseline AP50. It is retained only as a negative-result experiment showing that:
 
-## Outputs
+- a nominally larger teacher is not useful when its AP50 advantage is negligible;
+- direct channel-prefix inheritance is not sufficient for fine-grained weak-class preservation;
+- the v14 late foreground GapKD schedule remains the strongest completed 1.2M line.
 
-```text
-D:\grape_combo\runs\yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150\weights\best.pt
-D:\grape_combo\runs\yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150\weights\best_map50.pt
-```
-
-Use `best_map50.pt` for the AP50-only study.
-
-## Reporting Rule
-
-V17 inherits from the dataset-trained baseline. It must be described as teacher-assisted structured compression or pruning-style fine-tuning, not as a model trained from the same initialization as the baseline. Keep v14 in the paper as the strict same-start ablation.
+Do not invest further runs in the strong-teacher plus slim-initialization direction.
