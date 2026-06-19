@@ -64,6 +64,8 @@ The table records independent best validation metrics from each run's `results.c
 | `yolo11n_width20_gapkd_v16_ap50teacher_highsource7_region_img640_e150`            | 1.218M |   4.44 |     `0.94957` |     `0.78959` | AP50-selected teacher reduced student AP50; rejected counterexample           |
 | `yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150` | 1.213M |    4.3 |     `0.95077` |     `0.78909` | YOLO11s teacher + width-aware baseline inheritance; rejected counterexample   |
 | `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150`                        | 1.087M |    4.2 |     `0.93874` |     `0.77381` | GEW migration degraded weak classes; rejected                                 |
+| `yolo11n_1p4m_gapkd_v18a_realloc_highsource7_region_img640_e150`                  | 1.406M |    5.4 |     `0.95066` |     `0.79339` | 1.4M capacity reallocation did not recover AP50; rejected                     |
+| `yolo11n_1p4m_gapkd_v18b_selective_gew_highsource7_region_img640_e150`            | 1.401M |    5.5 |     `0.95609` |     `0.77590` | Selective GEW improved over v18A but stayed below v14; rejected               |
 
 ## Completed Counterexample Experiments
 
@@ -85,11 +87,20 @@ V17 used a YOLO11s teacher and initialized the width-0.20 student by copying com
 
 Weak-class AP50 remained poor: `healthy=0.896`, `brown_spot=0.904`, and `mites_disease=0.917`. The YOLO11s teacher exceeded the YOLO11n baseline by only `0.00020` AP50, so it did not provide a materially stronger signal. Width-prefix inheritance also failed to preserve the discriminative subspace required by the weak fine-grained classes. V17 trails v14 by `0.00725` AP50 and is archived.
 
+### V18: 1.4M capacity reallocation and selective GEW
+
+V18 tested whether relaxing the student from 1.2M to roughly 1.4M parameters could close the AP50 gap. Both runs reused the v14 KD schedule and fixed protocol, then loaded exact-shape COCO tensors rather than inheriting the dataset-trained baseline.
+
+- V18A used only standard YOLO11 modules with more capacity assigned to P3/P4. It reached `0.95066` AP50 and `0.79339` mAP50-95.
+- V18B used one GSConvns block in the deepest bottom-up downsample and two ESSE blocks on P3/P4. Its AP50-selected checkpoint reached `0.95609` AP50 and `0.77122` mAP50-95. Its mAP50-95-selected checkpoint reached `0.95296` AP50 and `0.77590` mAP50-95.
+
+V18B's AP50 remains `0.00193` below v14 and `0.01269` below the YOLO11n baseline. The 1.4M branch therefore does not justify replacing v14. The weak classes remain concentrated in `brown_spot`, `healthy`, and `mites_disease`; adding capacity and selective GEW modules did not solve the fine-grained class-discrimination bottleneck.
+
 ## Current Decision
 
 1. Keep `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` as the only active 1.2M main line.
-2. Treat v16 and v17 as negative-result/counterexample experiments in the ablation discussion.
-3. Do not continue AP50-teacher selection, stronger-teacher slim initialization, hard-negative suppression, full-run feature KD, or the GEW slim-neck migration.
+2. Treat v16, v17, v18A, and v18B as negative-result/counterexample experiments in the ablation discussion.
+3. Do not continue AP50-teacher selection, stronger-teacher slim initialization, hard-negative suppression, full-run feature KD, the GEW slim-neck migration, or the 1.4M selective-GEW branch.
 4. The current 1.2M line does not yet satisfy the requirement `AP50 >= 0.96878`; no completed lightweight model should be described as accuracy-preserving relative to the baseline.
 
 ## GEW-YOLO Paper Migration
