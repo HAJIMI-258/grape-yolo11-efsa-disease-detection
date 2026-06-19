@@ -70,6 +70,15 @@ def replace_detect_with_finegrained(model, cls_channels: int = 96):
         new.one2one_cv2 = old.one2one_cv2
     new.bias_init()
 
+    # Ultralytics attaches graph metadata after YAML parsing. Preserve it when
+    # swapping the head post-construction so DetectionModel.forward can route
+    # inputs exactly as before.
+    for attr in ("i", "f"):
+        if hasattr(old, attr):
+            setattr(new, attr, getattr(old, attr))
+    new.type = f"{new.__module__}.{new.__class__.__name__}"
+    new.np = sum(parameter.numel() for parameter in new.parameters())
+
     model.model[-1] = new
     model.stride = new.stride
     return model
