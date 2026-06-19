@@ -47,23 +47,23 @@ This file locks the main-table protocol for the grape disease detection experime
 
 The table records independent best validation metrics from each run's `results.csv`. For the AP50-oriented study, AP50-selected checkpoints must be reported consistently.
 
-| Run | Params | GFLOPs | Best AP50 | Best mAP50-95 | Status and interpretation |
-| --- | ---: | ---: | ---: | ---: | --- |
-| `yolo11n_highsource7_region_fast_img640_e150` | 2.591M | 6.3 | `0.96878` | `0.82287` | Full YOLO11n baseline |
-| `yolo11n_gapkd_full_highsource7_region_img640_e150` | 2.591M | 6.3 | failed | failed | Full YOLO11n + conservative teacher KD; stopped after host-memory failure |
-| `yolo11n_width20_kd_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.94158` | `0.78245` | 1.2M student + head KD |
-| `yolo11n_width20_kdattn_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.93833` | `0.77971` | All-map feature-attention KD; rejected |
-| `yolo11n_width20_gapkd_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.95429` | `0.79007` | Gap-aware weak-class KD + teacher foreground response |
-| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150` | 1.218M | 4.44 | stopped | stopped | Residual-gap balanced KD; early trajectory clearly below v1 |
-| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.92250` | `0.76927` | Hard-negative suppression damaged weak classes; rejected |
-| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150` | 1.218M | 4.44 | stopped | stopped | Positive-only class KD hurt convergence; rejected |
-| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.95154` | `0.79536` | Full-run P3/P4 foreground feature KD; AP50 below v1 |
-| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.94982` | `0.78666` | Weaker full-run feature KD; rejected |
-| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` | 1.218M | 4.44 | **`0.95802`** | `0.78727` | Current AP50-leading 1.2M line; late-ramped P3/P4 foreground KD from epoch 80 |
-| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150` | 1.218M | 4.44 | failed | failed | Stopped at epoch 32 because of host-memory allocation failure; invalid run |
-| `yolo11n_width20_gapkd_v16_ap50teacher_highsource7_region_img640_e150` | 1.218M | 4.44 | `0.94957` | `0.78959` | AP50-selected teacher reduced student AP50; rejected counterexample |
-| `yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150` | 1.213M | 4.3 | `0.95077` | `0.78909` | YOLO11s teacher + width-aware baseline inheritance; rejected counterexample |
-| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150` | 1.087M | 4.2 | `0.93874` | `0.77381` | GEW migration degraded weak classes; rejected |
+| Run                                                                               | Params | GFLOPs |     Best AP50 | Best mAP50-95 | Status and interpretation                                                     |
+| --------------------------------------------------------------------------------- | -----: | -----: | ------------: | ------------: | ----------------------------------------------------------------------------- |
+| `yolo11n_highsource7_region_fast_img640_e150`                                     | 2.591M |    6.3 |     `0.96878` |     `0.82287` | Full YOLO11n baseline                                                         |
+| `yolo11n_gapkd_full_highsource7_region_img640_e150`                               | 2.591M |    6.3 |        failed |        failed | Full YOLO11n + conservative teacher KD; stopped after host-memory failure     |
+| `yolo11n_width20_kd_highsource7_region_img640_e150`                               | 1.218M |   4.44 |     `0.94158` |     `0.78245` | 1.2M student + head KD                                                        |
+| `yolo11n_width20_kdattn_highsource7_region_img640_e150`                           | 1.218M |   4.44 |     `0.93833` |     `0.77971` | All-map feature-attention KD; rejected                                        |
+| `yolo11n_width20_gapkd_highsource7_region_img640_e150`                            | 1.218M |   4.44 |     `0.95429` |     `0.79007` | Gap-aware weak-class KD + teacher foreground response                         |
+| `yolo11n_width20_gapkd_v2_highsource7_region_img640_e150`                         | 1.218M |   4.44 |       stopped |       stopped | Residual-gap balanced KD; early trajectory clearly below v1                   |
+| `yolo11n_width20_gapkd_v2a_highsource7_region_img640_e150`                        | 1.218M |   4.44 |     `0.92250` |     `0.76927` | Hard-negative suppression damaged weak classes; rejected                      |
+| `yolo11n_width20_gapkd_v11_highsource7_region_img640_e150`                        | 1.218M |   4.44 |       stopped |       stopped | Positive-only class KD hurt convergence; rejected                             |
+| `yolo11n_width20_gapkd_v12_highsource7_region_img640_e150`                        | 1.218M |   4.44 |     `0.95154` |     `0.79536` | Full-run P3/P4 foreground feature KD; AP50 below v1                           |
+| `yolo11n_width20_gapkd_v13_highsource7_region_img640_e150`                        | 1.218M |   4.44 |     `0.94982` |     `0.78666` | Weaker full-run feature KD; rejected                                          |
+| `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150`                        | 1.218M |   4.44 | **`0.95802`** |     `0.78727` | Current AP50-leading 1.2M line; late-ramped P3/P4 foreground KD from epoch 80 |
+| `yolo11n_width20_gapkd_v15_highsource7_region_img640_e150`                        | 1.218M |   4.44 |        failed |        failed | Stopped at epoch 32 because of host-memory allocation failure; invalid run    |
+| `yolo11n_width20_gapkd_v16_ap50teacher_highsource7_region_img640_e150`            | 1.218M |   4.44 |     `0.94957` |     `0.78959` | AP50-selected teacher reduced student AP50; rejected counterexample           |
+| `yolo11n_width20_gapkd_v17_strongteacher_sliminit_highsource7_region_img640_e150` | 1.213M |    4.3 |     `0.95077` |     `0.78909` | YOLO11s teacher + width-aware baseline inheritance; rejected counterexample   |
+| `yolo11n_width20_gew_gapkd_highsource7_region_img640_e150`                        | 1.087M |    4.2 |     `0.93874` |     `0.77381` | GEW migration degraded weak classes; rejected                                 |
 
 ## Completed Counterexample Experiments
 
