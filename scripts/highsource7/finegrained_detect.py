@@ -11,9 +11,8 @@ from ultralytics.nn.modules.conv import Conv, DWConv
 class FineGrainedDetect(Detect):
     """Detect-compatible head that widens only the classification towers.
 
-    The box-regression towers, feature inputs, decoding path, and NMS behavior
-    remain identical to YOLO11 Detect. The extra capacity is isolated to class
-    discrimination, which is the repeated failure mode on HighSource7.
+    The box-regression towers, feature inputs, decoding path, and NMS behavior remain identical to YOLO11 Detect. The
+    extra capacity is isolated to class discrimination, which is the repeated failure mode on HighSource7.
     """
 
     def __init__(
