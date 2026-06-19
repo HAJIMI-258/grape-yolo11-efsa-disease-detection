@@ -1,0 +1,45 @@
+# HighSource7 1.4M selective-GEW model.
+# Paper ideas are used selectively rather than replacing the whole neck:
+# - widen lesion-sensitive P3/P4 paths;
+# - use one GSConvns only on the deepest bottom-up downsample to pay for P3 capacity;
+# - apply ESSE only to P3/P4 detect inputs; keep P5 and all C3k2 fusion blocks intact.
+nc: 7
+scales:
+  n: [0.33, 1.00, 640]
+
+backbone:
+  - [-1, 1, Conv, [16, 3, 2]]
+  - [-1, 1, Conv, [32, 3, 2]]
+  - [-1, 2, C3k2, [72, False, 0.25]]
+  - [-1, 1, Conv, [72, 3, 2]]
+  - [-1, 2, C3k2, [120, False, 0.25]]
+  - [-1, 1, Conv, [120, 3, 2]]
+  - [-1, 2, C3k2, [120, True]]
+  - [-1, 1, Conv, [128, 3, 2]]
+  - [-1, 2, C3k2, [128, True]]
+  - [-1, 1, SPPF, [128, 5]]
+  - [-1, 2, C2PSA, [128]]
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]]
+  - [-1, 2, C3k2, [120, False]]
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 4], 1, Concat, [1]]
+  - [-1, 2, C3k2, [72, False]] # P3
+
+  - [-1, 1, Conv, [72, 3, 2]]
+  - [[-1, 13], 1, Concat, [1]]
+  - [-1, 2, C3k2, [120, False]] # P4
+
+  # Preserve all fusion C3k2 blocks; make only the deepest downsample lightweight.
+  - [-1, 1, GSConvns, [120, 3, 2, 0.50]]
+  - [[-1, 10], 1, Concat, [1]]
+  - [-1, 2, C3k2, [128, True]] # P5
+
+  # Stronger than the rejected GEW run's near-identity 0.015/0.08 gate,
+  # but still bounded to avoid destabilizing the detector.
+  - [16, 1, ESSE, [3, 0.04, 0.20]]
+  - [19, 1, ESSE, [3, 0.04, 0.20]]
+  - [[23, 24, 22], 1, Detect, [nc]]
