@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 from .conv import Conv
 
-__all__ = ("EFSAEnhance", "CARAFEUp", "BiFPNFuse", "CoordECA")
+__all__ = ("BiFPNFuse", "CARAFEUp", "CoordECA", "EFSAEnhance")
 
 
 def _inverse_tanh_clamped(value: float) -> float:
