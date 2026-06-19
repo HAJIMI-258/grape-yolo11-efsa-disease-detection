@@ -68,6 +68,9 @@ def replace_detect_with_finegrained(model, cls_channels: int = 96):
     new.strides = old.strides
     if old.end2end:
         new.one2one_cv2 = old.one2one_cv2
+
+    # Initialize the widened classification towers after copying the parsed
+    # strides; Detect.bias_init() uses them for finite class priors.
     new.bias_init()
 
     # Ultralytics attaches graph metadata after YAML parsing. Preserve it when
