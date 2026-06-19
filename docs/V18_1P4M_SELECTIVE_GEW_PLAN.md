@@ -69,10 +69,10 @@ Both V18A and V18B must complete before attributing a gain to GEW modules. If V1
 
 Both v18 runs failed the decision rule and are archived as negative ablations. They should not replace the v14 1.2M main line.
 
-| Variant | Params | GFLOPs | Best AP50 | Best mAP50-95 | Outcome |
-| --- | ---: | ---: | ---: | ---: | --- |
-| V18A capacity reallocation | 1.406M fused | 5.4 | `0.95066` | `0.79339` | Worse than v14; capacity alone did not recover weak classes |
-| V18B selective GEW | 1.401M fused | 5.5 | `0.95609` | `0.77590` | Better than V18A, still below v14 and far below baseline |
+| Variant                    |       Params | GFLOPs | Best AP50 | Best mAP50-95 | Outcome                                                     |
+| -------------------------- | -----------: | -----: | --------: | ------------: | ----------------------------------------------------------- |
+| V18A capacity reallocation | 1.406M fused |    5.4 | `0.95066` |     `0.79339` | Worse than v14; capacity alone did not recover weak classes |
+| V18B selective GEW         | 1.401M fused |    5.5 | `0.95609` |     `0.77590` | Better than V18A, still below v14 and far below baseline    |
 
 V18A completed a full 150-epoch run. Its AP50-selected checkpoint reached `0.95066` at epoch 106, and its mAP50-95-selected checkpoint reached `0.79339` at epoch 147.
 
@@ -83,14 +83,14 @@ V18B also completed before a scheduler mistake relaunched the task at `23:59` an
 
 V18B per-class AP50 from `best_map50.pt`:
 
-| Class | AP50 | mAP50-95 |
-| --- | ---: | ---: |
-| black_rot | `0.98119` | `0.89337` |
+| Class              |      AP50 |  mAP50-95 |
+| ------------------ | --------: | --------: |
+| black_rot          | `0.98119` | `0.89337` |
 | esca_black_measles | `0.99500` | `0.96029` |
-| healthy | `0.93308` | `0.79311` |
-| leaf_blight | `0.99500` | `0.94470` |
-| brown_spot | `0.88837` | `0.62780` |
-| downy_mildew | `0.95658` | `0.64476` |
-| mites_disease | `0.94340` | `0.53451` |
+| healthy            | `0.93308` | `0.79311` |
+| leaf_blight        | `0.99500` | `0.94470` |
+| brown_spot         | `0.88837` | `0.62780` |
+| downy_mildew       | `0.95658` | `0.64476` |
+| mites_disease      | `0.94340` | `0.53451` |
 
 The result does not support continuing the 1.4M GEW branch. The weak fine-grained classes remain the bottleneck, especially `brown_spot` and localization quality for `mites_disease`. The current best deployable student remains `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150`.
