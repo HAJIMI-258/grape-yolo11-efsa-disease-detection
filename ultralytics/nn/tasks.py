@@ -19,6 +19,7 @@ from ultralytics.nn.modules import (
     C3,
     C3TR,
     ELAN1,
+    ESSE,
     OBB,
     OBB26,
     PSA,
@@ -28,25 +29,27 @@ from ultralytics.nn.modules import (
     A2C2f,
     AConv,
     ADown,
+    BiFPNFuse,
     Bottleneck,
     BottleneckCSP,
-    CARAFEUp,
     C2f,
     C2fAttn,
     C2fCIB,
     C2fPSA,
     C3Ghost,
     C3k2,
+    C3Star,
     C3x,
+    CARAFEUp,
     CBFuse,
     CBLinear,
     Classify,
     Concat,
-    BiFPNFuse,
-    CoordECA,
     Conv,
     Conv2,
     ConvTranspose,
+    CoordECA,
+    CoordECADetect,
     Detect,
     DWConv,
     DWConvTranspose2d,
@@ -54,6 +57,7 @@ from ultralytics.nn.modules import (
     Focus,
     GhostBottleneck,
     GhostConv,
+    GSConvns,
     HGBlock,
     HGStem,
     ImagePoolingAttn,
@@ -72,6 +76,7 @@ from ultralytics.nn.modules import (
     Segment26,
     SemanticSegment,
     TorchVision,
+    VoVGSCSPns,
     WorldDetect,
     YOLOEDetect,
     YOLOESegment,
@@ -1681,6 +1686,7 @@ def parse_model(d, ch, verbose=True):
             Classify,
             Conv,
             ConvTranspose,
+            GSConvns,
             GhostConv,
             Bottleneck,
             GhostBottleneck,
@@ -1704,6 +1710,8 @@ def parse_model(d, ch, verbose=True):
             C3,
             C3TR,
             C3Ghost,
+            C3Star,
+            VoVGSCSPns,
             torch.nn.ConvTranspose2d,
             DWConvTranspose2d,
             C3x,
@@ -1725,6 +1733,8 @@ def parse_model(d, ch, verbose=True):
             C3,
             C3TR,
             C3Ghost,
+            C3Star,
+            VoVGSCSPns,
             C3x,
             RepC3,
             C2fPSA,
@@ -1780,7 +1790,7 @@ def parse_model(d, ch, verbose=True):
             c2 = args[1] if args[3] else args[1] * 4
         elif m is torch.nn.BatchNorm2d:
             args = [ch[f]]
-        elif m in frozenset({EFSAEnhance, CARAFEUp, CoordECA}):
+        elif m in frozenset({EFSAEnhance, CARAFEUp, CoordECA, ESSE}):
             c2 = ch[f]
             args = [c2, *args]
         elif m is BiFPNFuse:
@@ -1794,6 +1804,7 @@ def parse_model(d, ch, verbose=True):
         elif m in frozenset(
             {
                 Detect,
+                CoordECADetect,
                 WorldDetect,
                 YOLOEDetect,
                 Segment,
@@ -1809,7 +1820,19 @@ def parse_model(d, ch, verbose=True):
             args.extend([reg_max, end2end, [ch[x] for x in f]])
             if m is Segment or m is YOLOESegment or m is Segment26 or m is YOLOESegment26:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
-            if m in {Detect, YOLOEDetect, Segment, Segment26, YOLOESegment, YOLOESegment26, Pose, Pose26, OBB, OBB26}:
+            if m in {
+                Detect,
+                CoordECADetect,
+                YOLOEDetect,
+                Segment,
+                Segment26,
+                YOLOESegment,
+                YOLOESegment26,
+                Pose,
+                Pose26,
+                OBB,
+                OBB26,
+            }:
                 m.legacy = legacy
         elif m is SemanticSegment:
             args.append([ch[x] for x in f])  # nc, ch tuple

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +115,10 @@ class BboxLoss(nn.Module):
         """Initialize the BboxLoss module with regularization maximum and DFL settings."""
         super().__init__()
         self.dfl_loss = DFLoss(reg_max) if reg_max > 1 else None
+        self.nwd_alpha = max(0.0, min(1.0, float(os.getenv("YOLO_NWD_ALPHA", "0.0"))))
+        self.nwd_constant = max(1e-6, float(os.getenv("YOLO_NWD_CONSTANT", "12.8")))
+        self.nwd_small_area = max(0.0, float(os.getenv("YOLO_NWD_SMALL_AREA", "1.0")))
+        self.wiou_alpha = max(0.0, min(1.0, float(os.getenv("YOLO_WIOU_ALPHA", "0.0"))))
 
     def forward(
         self,
@@ -131,6 +136,39 @@ class BboxLoss(nn.Module):
         weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
+        if self.wiou_alpha > 0:
+            pred_fg = pred_bboxes[fg_mask]
+            target_fg = target_bboxes[fg_mask]
+            pred_xy = (pred_fg[:, :2] + pred_fg[:, 2:]) * 0.5
+            target_xy = (target_fg[:, :2] + target_fg[:, 2:]) * 0.5
+            c_x1 = torch.minimum(pred_fg[:, 0], target_fg[:, 0])
+            c_y1 = torch.minimum(pred_fg[:, 1], target_fg[:, 1])
+            c_x2 = torch.maximum(pred_fg[:, 2], target_fg[:, 2])
+            c_y2 = torch.maximum(pred_fg[:, 3], target_fg[:, 3])
+            center_dist = (pred_xy - target_xy).pow(2).sum(1, keepdim=True)
+            c_diag = (c_x2 - c_x1).pow(2).unsqueeze(-1) + (c_y2 - c_y1).pow(2).unsqueeze(-1) + 1e-7
+            rw = torch.exp(center_dist / c_diag).detach()
+            plain_iou = bbox_iou(pred_fg, target_fg, xywh=False, CIoU=False).clamp(0, 1)
+            loss_wiou = (rw * (1.0 - plain_iou) * weight).sum() / target_scores_sum
+            loss_iou = (1.0 - self.wiou_alpha) * loss_iou + self.wiou_alpha * loss_wiou
+        if self.nwd_alpha > 0:
+            stride_values = stride.squeeze(-1)
+            if stride_values.ndim == 1:
+                fg_stride = stride_values.unsqueeze(0).expand_as(fg_mask)[fg_mask].unsqueeze(-1)
+            else:
+                fg_stride = stride_values[fg_mask].unsqueeze(-1)
+            pred_xywh = xyxy2xywh(pred_bboxes[fg_mask] * fg_stride)
+            target_xywh = xyxy2xywh(target_bboxes[fg_mask] * fg_stride)
+            target_wh = target_xywh[:, 2:4].clamp_(min=0)
+            image_area = (imgsz[0] * imgsz[1]).clamp(min=1)
+            target_area = (target_wh[:, 0] * target_wh[:, 1]) / image_area
+            small_gate = (target_area <= self.nwd_small_area).to(weight.dtype).unsqueeze(-1)
+            if small_gate.sum() > 0:
+                center_dist = (pred_xywh[:, :2] - target_xywh[:, :2]).pow(2).sum(dim=1)
+                size_dist = (pred_xywh[:, 2:4] - target_xywh[:, 2:4]).pow(2).sum(dim=1) / 4.0
+                nwd = torch.exp(-(center_dist + size_dist + 1e-7).sqrt() / self.nwd_constant).unsqueeze(-1)
+                loss_nwd = ((1.0 - nwd) * weight * small_gate).sum() / target_scores_sum
+                loss_iou = (1.0 - self.nwd_alpha) * loss_iou + self.nwd_alpha * loss_nwd
 
         # DFL loss
         if self.dfl_loss:
@@ -354,6 +392,12 @@ class v8DetectionLoss:
 
         # Class weights for handling imbalanced datasets
         self.class_weights = getattr(model, "class_weights", None)
+        env_class_weights = os.getenv("YOLO_CLASS_WEIGHTS", "").strip()
+        if env_class_weights:
+            values = [float(x) for x in env_class_weights.replace(";", ",").split(",") if x.strip()]
+            if len(values) != self.nc:
+                raise ValueError(f"YOLO_CLASS_WEIGHTS expected {self.nc} values, got {len(values)}")
+            self.class_weights = torch.tensor(values, device=device, dtype=torch.float32)
         if self.class_weights is not None:
             self.class_weights = self.class_weights.to(device).view(1, 1, -1)
 
@@ -429,12 +473,19 @@ class v8DetectionLoss:
         )
 
         target_scores_sum = max(target_scores.sum(), 1)
+        weighted_target_scores = target_scores
+        weighted_target_scores_sum = target_scores_sum
+        if self.class_weights is not None:
+            weighted_target_scores = target_scores * self.class_weights.to(target_scores.dtype)
+            weighted_target_scores_sum = max(weighted_target_scores.sum(), 1)
 
         # Cls loss with optional class weighting
         bce_loss = self.bce(pred_scores, target_scores.to(dtype))  # (bs, num_anchors, nc)
         if self.class_weights is not None:
-            bce_loss *= self.class_weights
-        loss[1] = bce_loss.sum() / target_scores_sum  # BCE
+            # Weight positive assigned classes only. Scaling all negative class terms hurts rare classes.
+            positive_weight = 1.0 + (self.class_weights.to(dtype) - 1.0) * target_scores.to(dtype)
+            bce_loss *= positive_weight
+        loss[1] = bce_loss.sum() / weighted_target_scores_sum  # BCE
 
         # Bbox loss
         if fg_mask.sum():
@@ -443,8 +494,8 @@ class v8DetectionLoss:
                 pred_bboxes,
                 anchor_points,
                 target_bboxes / stride_tensor,
-                target_scores,
-                target_scores_sum,
+                weighted_target_scores,
+                weighted_target_scores_sum,
                 fg_mask,
                 imgsz,
                 stride_tensor,

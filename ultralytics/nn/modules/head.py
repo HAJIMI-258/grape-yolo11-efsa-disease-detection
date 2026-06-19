@@ -17,12 +17,14 @@ from ultralytics.utils.torch_utils import TORCH_1_11, fuse_conv_and_bn, smart_in
 
 from .block import DFL, SAVPE, BNContrastiveHead, ContrastiveHead, Proto, Proto26, RealNVP, Residual, SwiGLUFFN
 from .conv import Conv, DWConv
+from .efsa import CoordECA
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from .utils import bias_init_with_prob, linear_init
 
 __all__ = (
     "OBB",
     "Classify",
+    "CoordECADetect",
     "Detect",
     "Pose",
     "RTDETRDecoder",
@@ -260,6 +262,28 @@ class Detect(nn.Module):
     def fuse(self) -> None:
         """Remove the one2many head for inference optimization."""
         self.cv2 = self.cv3 = None
+
+
+class CoordECADetect(Detect):
+    """YOLO Detect head with lightweight CoordECA feature gating before prediction.
+
+    The Detect submodules keep the original names (`cv2`, `cv3`, `dfl`) so pretrained YOLO11 Detect weights can be
+    reused. Only the small attention branches are newly initialized.
+    """
+
+    def __init__(self, nc: int = 80, reg_max=16, end2end=False, ch: tuple = ()):
+        """Initialize a Detect-compatible CoordECA detection head."""
+        super().__init__(nc, reg_max, end2end, ch)
+        self.attn = nn.ModuleList(
+            CoordECA(int(c), coord_alpha=0.08, eca_alpha=0.06, init_scale=0.012, max_scale=0.06) for c in ch
+        )
+
+    def forward(
+        self, x: list[torch.Tensor]
+    ) -> dict[str, torch.Tensor] | torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        """Apply lightweight attention before the standard YOLO Detect forward path."""
+        x = [self.attn[i](xi) for i, xi in enumerate(x)]
+        return super().forward(x)
 
 
 class Segment(Detect):

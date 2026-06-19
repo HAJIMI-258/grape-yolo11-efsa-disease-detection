@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 from .conv import Conv
 
-__all__ = ("EFSAEnhance", "CARAFEUp", "BiFPNFuse", "CoordECA")
+__all__ = ("ESSE", "BiFPNFuse", "CARAFEUp", "CoordECA", "EFSAEnhance")
 
 
 def _inverse_tanh_clamped(value: float) -> float:
@@ -278,3 +278,39 @@ class CoordECA(nn.Module):
 
         enhancement = self.coord_alpha * (coord - x) + self.eca_alpha * (eca - x)
         return x + self.scale() * enhancement
+
+
+class ESSE(nn.Module):
+    """Efficient semantic-spatial enhancement attention from the GEW-YOLO idea."""
+
+    def __init__(
+        self,
+        c1: int,
+        eca_kernel_size: int = 3,
+        init_scale: float = 0.015,
+        max_scale: float = 0.10,
+        trainable_scale: bool = True,
+    ):
+        """Initialize ESSE.
+
+        ESSE combines a semantic 1x1 branch, a local-spatial 3x3 branch, ECA
+        channel weighting, and bounded residual injection. It is deliberately
+        conservative so it can be inserted on detect-input features without
+        destabilizing pretrained YOLO weights.
+        """
+        super().__init__()
+        self.semantic = Conv(c1, c1, 1, 1)
+        self.spatial = Conv(c1, c1, 3, 1, g=c1)
+        self.weights = nn.Parameter(torch.ones(2, dtype=torch.float32))
+        self.eca = nn.Conv1d(1, 1, kernel_size=eca_kernel_size, padding=eca_kernel_size // 2, bias=False)
+        self.scale = SafeResidualScale(init_scale, max_scale, trainable_scale)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply semantic-spatial feature enhancement."""
+        weights = F.relu(self.weights)
+        weights = weights / (weights.sum() + 1e-6)
+        y = weights[0] * self.semantic(x) + weights[1] * self.spatial(x)
+        eca = y.mean(dim=(2, 3), keepdim=True)
+        eca = self.eca(eca.squeeze(-1).transpose(1, 2)).transpose(1, 2).unsqueeze(-1)
+        y = y * torch.sigmoid(eca)
+        return x + self.scale() * (y - x)
