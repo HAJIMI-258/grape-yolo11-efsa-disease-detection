@@ -25,6 +25,7 @@ SOURCE = Path(
     )
 )
 TARGET = int(os.environ.get("GRAPE_V23_TARGET", "2100000"))
+MIN_ENERGY = float(os.environ.get("GRAPE_V23_MIN_ENERGY", "0.95"))
 OUTPUT = REMOTE / "lowrank_models" / f"yolo11n_v23_p{TARGET // 1000}k_dryrun.pt"
 
 
@@ -35,7 +36,7 @@ def main() -> None:
     wrapper = YOLO(str(SOURCE))
     model = wrapper.model.float().cpu().eval()
     before = sum(parameter.numel() for parameter in model.parameters())
-    compressed, choices = compress_to_budget(model, TARGET)
+    compressed, choices = compress_to_budget(model, TARGET, min_retained_energy=MIN_ENERGY)
     after = sum(parameter.numel() for parameter in compressed.parameters())
     save_lowrank_checkpoint(compressed, SOURCE, OUTPUT)
 
@@ -69,6 +70,7 @@ def main() -> None:
 
     print("source", SOURCE)
     print("target_parameters", TARGET)
+    print("min_retained_energy_limit", MIN_ENERGY)
     print("params_before", before)
     print("params_after", after)
     print("reduction_percent", 100.0 * (before - after) / before)

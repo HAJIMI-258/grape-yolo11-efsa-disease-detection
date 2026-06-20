@@ -194,7 +194,10 @@ def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16)
         if sensitivity == float("inf"):
             continue
 
-        matrix, geometry, current_cost, current_rank = _matrix_and_geometry(module)
+        try:
+            matrix, geometry, current_cost, current_rank = _matrix_and_geometry(module)
+        except ValueError:
+            continue
         if min(geometry.c1, geometry.c2) < 24 or current_cost < 4096:
             continue
 
@@ -228,7 +231,12 @@ def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16)
     return candidates
 
 
-def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int = 8) -> list[RankChoice]:
+def plan_lowrank_budget(
+    model: nn.Module,
+    target_parameters: int,
+    rank_step: int = 8,
+    min_retained_energy: float = 0.95,
+) -> list[RankChoice]:
     """Greedily trade the least singular-value energy for parameter savings."""
     current_total = sum(parameter.numel() for parameter in model.parameters())
     if current_total <= target_parameters:
@@ -254,6 +262,8 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
             next_cost = _factor_cost(candidate.geometry, next_rank)
             total_energy = candidate.singular_values.square().sum().clamp_min(1e-12)
             next_energy = float(candidate.singular_values[:next_rank].square().sum() / total_energy)
+            if next_energy < min_retained_energy:
+                continue
 
             if state_index is None:
                 previous_cost = candidate.current_cost
@@ -275,7 +285,7 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
         if best is None:
             raise RuntimeError(
                 f"Unable to reach {target_parameters:,} parameters with the protected candidate set; "
-                f"stopped near {predicted_total:,}"
+                f"stopped near {predicted_total:,} with min_retained_energy={min_retained_energy:.3f}"
             )
 
         _, name, next_index, saved = best
@@ -349,10 +359,11 @@ def compress_to_budget(
     target_parameters: int,
     *,
     example_inputs: torch.Tensor | None = None,
+    min_retained_energy: float = 0.95,
 ) -> tuple[nn.Module, list[RankChoice]]:
     """Plan, apply, and validate low-rank compression to a global budget."""
     model = model.float().cpu().eval()
-    choices = plan_lowrank_budget(model, target_parameters)
+    choices = plan_lowrank_budget(model, target_parameters, min_retained_energy=min_retained_energy)
     model = apply_lowrank_plan(model, choices)
     if example_inputs is None:
         example_inputs = torch.zeros(1, 3, 640, 640)
