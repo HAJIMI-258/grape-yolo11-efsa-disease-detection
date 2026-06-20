@@ -48,13 +48,15 @@ D:\Python311\python.exe scripts\highsource7\build_yolo11n_baseline_soup_highsour
 ## Compression ladder
 
 | Profile | Deep P5 | Deep downsample | P5 head | Expected params | Approx. reduction |
-| ------- | ------: | --------------: | ------: | --------------: | ----------------: |
-| `p233`  |     232 |             120 |     232 |          2.334M |               10% |
-| `p226`  |     224 |             120 |     224 |          2.256M |               13% |
-| `p210`  |     208 |             112 |     208 |          2.096M |               19% |
-| `p196`  |     192 |             112 |     192 |          1.955M |               25% |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `p251` | 248 | 128 | 248 | 2.507M | 3% |
+| `p242` | 240 | 128 | 240 | 2.425M | 6% |
+| `p233` | 232 | 120 | 232 | 2.334M | 10% |
+| `p226` | 224 | 120 | 224 | 2.256M | 13% |
+| `p210` | 208 | 112 | 208 | 2.096M | 19% |
+| `p196` | 192 | 112 | 192 | 1.955M | 25% |
 
-Run only `p233` first. A smaller profile is allowed only after the previous profile reaches or exceeds the baseline AP50.
+Run only `p251` first. A smaller profile is allowed only after the previous profile reaches or exceeds the baseline AP50. This turns the experiment into a measured no-drop compression frontier rather than another large one-shot cut.
 
 ## Recovery protocol
 
@@ -79,7 +81,7 @@ pip install -r requirements-pruning.txt
 
 git checkout codex/v20-p5-depgraph-pruning
 $env:PYTHONPATH="D:\grape_combo\grape-yolo11-efsa-disease-detection;D:\grape_combo"
-$env:GRAPE_P5_PROFILE="p233"
+$env:GRAPE_P5_PROFILE="p251"
 
 # Set this only if the soup scan beats the baseline.
 # $env:GRAPE_PRUNE_SOURCE="D:\grape_combo\baseline_soup\yolo11n_highsource7_soup_best.pt"
@@ -94,7 +96,7 @@ The dry run must finish a 640-pixel forward pass and print a parameter count clo
 Run directly from the terminal. Do not create a recurring scheduled task.
 
 ```powershell
-$env:GRAPE_P5_PROFILE="p233"
+$env:GRAPE_P5_PROFILE="p251"
 D:\Python311\python.exe scripts\highsource7\train_yolo11n_p5prune_v20_highsource7_region_remote.py
 ```
 
