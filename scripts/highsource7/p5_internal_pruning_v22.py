@@ -155,7 +155,9 @@ def prune_yolo11n_p5_internal(
     return model
 
 
-def save_pruned_ultralytics_checkpoint(model: nn.Module, source_checkpoint: str | Path, destination: str | Path) -> Path:
+def save_pruned_ultralytics_checkpoint(
+    model: nn.Module, source_checkpoint: str | Path, destination: str | Path
+) -> Path:
     """Save a normal Ultralytics checkpoint and replace EMA with the pruned graph."""
     from ultralytics import YOLO
 
