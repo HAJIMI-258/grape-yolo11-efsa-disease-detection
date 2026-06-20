@@ -27,7 +27,7 @@ AP50_SOURCE = Path(
 )
 FALLBACK_SOURCE = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_fast_img640_e150\weights\best.pt")
 TEACHER_WEIGHTS = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_fast_img640_e150\weights\best.pt")
-PROFILE_NAME = os.environ.get("GRAPE_P5_PROFILE", "p233").lower()
+PROFILE_NAME = os.environ.get("GRAPE_P5_PROFILE", "p251").lower()
 
 
 class P5PrunedRecoveryTrainer(AP50CheckpointMixin, DetectionTrainer):
