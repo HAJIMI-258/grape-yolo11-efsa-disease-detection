@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
@@ -49,6 +50,8 @@ class TwoScaleRetentionCriterion(GapFeatureDistillCriterion):
         # The p251 teacher is already strong on all seven classes. Do not repeat
         # the aggressive weak-class weighting that destabilized prior variants.
         self.class_weights = torch.ones(student.nc, dtype=torch.float32)
+        self.cross_scale_weight = 0.04
+        self.cross_scale_threshold = 0.25
 
     @staticmethod
     def _trim_teacher(teacher_preds: dict, student_preds: dict) -> dict:
@@ -60,6 +63,41 @@ class TwoScaleRetentionCriterion(GapFeatureDistillCriterion):
         if teacher_preds.get("feats"):
             trimmed["feats"] = list(teacher_preds["feats"][: len(student_preds.get("feats", []))])
         return trimmed
+
+    def _p5_to_p4_response_loss(self, student_preds: dict, teacher_preds: dict) -> torch.Tensor:
+        """Move only confident teacher P5 class responses into pooled student P4 cells.
+
+        No teacher-low-confidence location is treated as a negative. This avoids
+        the hard-negative failure mode while compensating for the removed scale.
+        """
+        s_feats = student_preds.get("feats")
+        t_feats = teacher_preds.get("feats")
+        if not s_feats or not t_feats or len(s_feats) < 2 or len(t_feats) < 3:
+            return torch.zeros((), device=student_preds["scores"].device)
+
+        h3, w3 = s_feats[0].shape[-2:]
+        h4, w4 = s_feats[1].shape[-2:]
+        h5, w5 = t_feats[2].shape[-2:]
+        n3, n4, n5 = h3 * w3, h4 * w4, h5 * w5
+        if student_preds["scores"].shape[-1] < n3 + n4 or teacher_preds["scores"].shape[-1] < n3 + n4 + n5:
+            return torch.zeros((), device=student_preds["scores"].device)
+
+        batch, classes, _ = student_preds["scores"].shape
+        student_p4 = student_preds["scores"][..., n3 : n3 + n4].reshape(batch, classes, h4, w4)
+        student_p4 = F.adaptive_max_pool2d(student_p4, output_size=(h5, w5))
+        teacher_p5 = teacher_preds["scores"][..., n3 + n4 : n3 + n4 + n5].detach().reshape(
+            batch, classes, h5, w5
+        )
+
+        teacher_prob = teacher_p5.sigmoid()
+        confidence, class_index = teacher_prob.max(dim=1, keepdim=True)
+        positive_mask = confidence.gt(self.cross_scale_threshold).to(student_p4.dtype)
+        if positive_mask.sum() <= 0:
+            return torch.zeros((), device=student_p4.device)
+
+        selected_student = student_p4.gather(1, class_index)
+        loss = F.binary_cross_entropy_with_logits(selected_student, confidence, reduction="none")
+        return (loss * positive_mask).sum() / positive_mask.sum().clamp_min(1.0)
 
     def __call__(self, preds, batch):
         base_loss, loss_items = self.base(preds, batch)
@@ -78,10 +116,11 @@ class TwoScaleRetentionCriterion(GapFeatureDistillCriterion):
         if not isinstance(teacher_preds, dict):
             return base_loss, loss_items
 
-        teacher_preds = self._trim_teacher(teacher_preds, student_preds)
-        head_kd = self._head_distill_loss(student_preds, teacher_preds)
-        feature_kd = self._foreground_feature_loss(student_preds, teacher_preds, batch)
-        total_kd = head_kd + self.feature_weight * feature_kd
+        cross_scale_kd = self._p5_to_p4_response_loss(student_preds, teacher_preds)
+        trimmed_teacher = self._trim_teacher(teacher_preds, student_preds)
+        head_kd = self._head_distill_loss(student_preds, trimmed_teacher)
+        feature_kd = self._foreground_feature_loss(student_preds, trimmed_teacher, batch)
+        total_kd = head_kd + self.feature_weight * feature_kd + self.cross_scale_weight * cross_scale_kd
         return base_loss + total_kd * batch["img"].shape[0], loss_items
 
 
@@ -100,7 +139,8 @@ class P3P4CompactRecoveryTrainer(AP50CheckpointMixin, DetectionTrainer):
         self.teacher = teacher
         self.model.criterion = TwoScaleRetentionCriterion(self.model, teacher)
         LOGGER.info(
-            "V21 P3/P4 retention KD: teacher=%s, cls=0.25, response=0.08, dfl=0.03, feature=0.01",
+            "V21 P3/P4 retention KD: teacher=%s, cls=0.25, response=0.08, dfl=0.03, "
+            "feature=0.01, P5-to-P4 positive response=0.04",
             P251_SOURCE,
         )
 
