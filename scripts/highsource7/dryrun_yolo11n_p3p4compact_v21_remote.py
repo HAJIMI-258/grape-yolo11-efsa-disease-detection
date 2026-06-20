@@ -6,9 +6,11 @@ from pathlib import Path
 
 REMOTE = Path(r"D:\grape_combo")
 REPO = REMOTE / "grape-yolo11-efsa-disease-detection"
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
 if REPO.exists():
-    sys.path.insert(0, str(REPO))
-sys.path.insert(0, str(REMOTE))
+    sys.path.insert(1, str(REPO))
+sys.path.insert(2, str(REMOTE))
 
 from p3p4_compaction import compact_p251_to_p3p4, save_compact_checkpoint
 

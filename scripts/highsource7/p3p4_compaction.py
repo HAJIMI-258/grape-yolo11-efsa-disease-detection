@@ -88,5 +88,14 @@ def save_compact_checkpoint(model: nn.Module, source_checkpoint: str | Path, des
     destination.parent.mkdir(parents=True, exist_ok=True)
     wrapper = YOLO(str(source_checkpoint))
     wrapper.model = model
+    if isinstance(getattr(wrapper, "ckpt", None), dict):
+        # Ultralytics validation prefers the checkpoint EMA when present. Replace
+        # it as well, otherwise reloading the compact checkpoint silently restores
+        # the unpruned source graph.
+        compact_ema = copy.deepcopy(model).half()
+        for parameter in compact_ema.parameters():
+            parameter.requires_grad_(False)
+        wrapper.ckpt["ema"] = compact_ema
+        wrapper.ckpt["updates"] = 0
     wrapper.save(destination)
     return destination
