@@ -72,6 +72,36 @@ def _source_checkpoint() -> Path:
     raise FileNotFoundError(f"Neither pruning source exists: {AP50_SOURCE} or {FALLBACK_SOURCE}")
 
 
+def _validate_before_recovery(pruned, source_path: Path, profile_name: str) -> tuple[Path, float, float]:
+    """Save a normal Ultralytics checkpoint and measure the immediate pruning damage."""
+    checkpoint_path = REMOTE / "pruned_models" / f"yolo11n_highsource7_{profile_name}_ultralytics.pt"
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    wrapper = YOLO(str(source_path))
+    wrapper.model = pruned
+    wrapper.save(checkpoint_path)
+    metrics = YOLO(str(checkpoint_path)).val(
+        data=str(DATA_CFG),
+        imgsz=640,
+        batch=64,
+        workers=4,
+        device=0,
+        plots=False,
+        verbose=False,
+        project=str(REMOTE / "runs"),
+        name=f"yolo11n_p5prune_v20_{profile_name}_initial_val",
+    )
+    ap50 = float(metrics.box.map50)
+    map5095 = float(metrics.box.map)
+    LOGGER.info(
+        "V20 %s immediate post-pruning validation: AP50=%.5f, mAP50-95=%.5f",
+        profile_name,
+        ap50,
+        map5095,
+    )
+    return checkpoint_path, ap50, map5095
+
+
 def main() -> None:
     if PROFILE_NAME not in PROFILES:
         raise KeyError(f"Unknown GRAPE_P5_PROFILE={PROFILE_NAME!r}; choose from {sorted(PROFILES)}")
@@ -103,6 +133,7 @@ def main() -> None:
             "params_after": after,
         },
     )
+    _validate_before_recovery(pruned, source_path, profile.name)
 
     run_name = f"yolo11n_p5prune_v20_{profile.name}_highsource7_region_img640_e150"
     overrides = {
