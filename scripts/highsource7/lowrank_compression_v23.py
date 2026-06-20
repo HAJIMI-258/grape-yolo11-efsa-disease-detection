@@ -7,14 +7,14 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 
-from ultralytics.nn.modules.conv import Conv, autopad
+from ultralytics.nn.modules.conv import Conv
 
 
 class LowRankConv(nn.Module):
     """SVD-factorized replacement for an Ultralytics Conv block.
 
-    Output channels, stride, padding, dilation, BN, and activation are preserved.
-    Only the internal matrix rank changes, so the YOLO graph interface is stable.
+    The block preserves the original output channels, stride, padding, dilation,
+    batch normalization, and activation. Only the internal matrix rank changes.
     """
 
     def __init__(
@@ -22,21 +22,29 @@ class LowRankConv(nn.Module):
         c1: int,
         c2: int,
         rank: int,
-        k: int | tuple[int, int] = 1,
-        s: int | tuple[int, int] = 1,
-        p: int | tuple[int, int] | None = None,
-        d: int | tuple[int, int] = 1,
-        act: nn.Module | None = None,
-        bn: nn.BatchNorm2d | None = None,
+        kernel_size: tuple[int, int],
+        stride: tuple[int, int],
+        padding: tuple[int, int],
+        dilation: tuple[int, int],
+        act: nn.Module,
+        bn: nn.BatchNorm2d,
     ) -> None:
         super().__init__()
         if rank <= 0:
             raise ValueError(f"rank must be positive, got {rank}")
         self.rank = int(rank)
-        self.spatial = nn.Conv2d(c1, rank, k, s, autopad(k, p, d), dilation=d, bias=False)
+        self.spatial = nn.Conv2d(
+            c1,
+            rank,
+            kernel_size,
+            stride,
+            padding,
+            dilation=dilation,
+            bias=False,
+        )
         self.pointwise = nn.Conv2d(rank, c2, 1, 1, bias=False)
-        self.bn = copy.deepcopy(bn) if bn is not None else nn.BatchNorm2d(c2)
-        self.act = copy.deepcopy(act) if act is not None else nn.SiLU()
+        self.bn = copy.deepcopy(bn)
+        self.act = copy.deepcopy(act)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.act(self.bn(self.pointwise(self.spatial(x))))
@@ -45,16 +53,32 @@ class LowRankConv(nn.Module):
         return self.forward(x)
 
 
+@dataclass(frozen=True)
+class ConvGeometry:
+    c1: int
+    c2: int
+    kernel: tuple[int, int]
+    stride: tuple[int, int]
+    padding: tuple[int, int]
+    dilation: tuple[int, int]
+    act: nn.Module
+    bn: nn.BatchNorm2d
+
+    @property
+    def flat_input(self) -> int:
+        return self.c1 * self.kernel[0] * self.kernel[1]
+
+
 @dataclass
 class FactorCandidate:
     name: str
     layer_index: int
     module_path: str
     module: Conv | LowRankConv
+    geometry: ConvGeometry
     matrix: torch.Tensor
     singular_values: torch.Tensor
     current_cost: int
-    current_rank: int | None
     possible_ranks: list[int]
     sensitivity: float
 
@@ -89,7 +113,6 @@ def _set_nested_module(module: nn.Module, path: str, replacement: nn.Module) -> 
 
 
 def _top_layer_and_path(name: str) -> tuple[int, str] | None:
-    # DetectionModel named modules use names such as model.8.m.0.cv1.
     parts = name.split(".")
     if len(parts) < 3 or parts[0] != "model" or not parts[1].isdigit():
         return None
@@ -97,47 +120,65 @@ def _top_layer_and_path(name: str) -> tuple[int, str] | None:
 
 
 def _sensitivity(layer_index: int, path: str) -> float:
-    """Penalize approximation of lesion-sensitive P3/P4 classification paths."""
-    if layer_index <= 4:
-        return float("inf")
-    if layer_index == 16:  # P3 PAN output
+    """Protect shallow features and the P3/P4 classification towers."""
+    if layer_index <= 4 or layer_index == 16:
         return float("inf")
     if layer_index == 23:
         if path.startswith("cv3.0") or path.startswith("cv3.1"):
-            return float("inf")  # preserve P3/P4 classification towers
+            return float("inf")
         if path.startswith("cv2.0"):
             return 3.0
         if path.startswith("cv2.1") or path.startswith("cv3.2"):
             return 2.0
         return 1.5
-    if layer_index in {5, 6, 13, 19}:
-        return 2.0
     if layer_index in {7, 8, 9, 10, 20, 22}:
         return 1.0
+    if layer_index in {5, 6, 13, 19}:
+        return 2.0
     return 2.5
 
 
-def _matrix_from_module(module: Conv | LowRankConv) -> tuple[torch.Tensor, int, int, tuple, tuple, tuple, nn.Module, nn.BatchNorm2d]:
+def _matrix_and_geometry(module: Conv | LowRankConv) -> tuple[torch.Tensor, ConvGeometry, int, int | None]:
     if isinstance(module, Conv):
         conv = module.conv
         if conv.groups != 1:
             raise ValueError("Grouped/depthwise convolutions are not eligible")
         matrix = conv.weight.detach().float().reshape(conv.out_channels, -1)
-        return matrix, conv.in_channels, conv.out_channels, conv.kernel_size, conv.stride, conv.dilation, module.act, module.bn
+        geometry = ConvGeometry(
+            c1=conv.in_channels,
+            c2=conv.out_channels,
+            kernel=tuple(conv.kernel_size),
+            stride=tuple(conv.stride),
+            padding=tuple(conv.padding),
+            dilation=tuple(conv.dilation),
+            act=module.act,
+            bn=module.bn,
+        )
+        return matrix, geometry, conv.weight.numel(), None
 
     if isinstance(module, LowRankConv):
         spatial = module.spatial.weight.detach().float().reshape(module.rank, -1)
         pointwise = module.pointwise.weight.detach().float().reshape(module.pointwise.out_channels, module.rank)
         matrix = pointwise @ spatial
         conv = module.spatial
-        return matrix, conv.in_channels, module.pointwise.out_channels, conv.kernel_size, conv.stride, conv.dilation, module.act, module.bn
+        geometry = ConvGeometry(
+            c1=conv.in_channels,
+            c2=module.pointwise.out_channels,
+            kernel=tuple(conv.kernel_size),
+            stride=tuple(conv.stride),
+            padding=tuple(conv.padding),
+            dilation=tuple(conv.dilation),
+            act=module.act,
+            bn=module.bn,
+        )
+        cost = module.spatial.weight.numel() + module.pointwise.weight.numel()
+        return matrix, geometry, cost, module.rank
 
     raise TypeError(type(module))
 
 
-def _parameter_cost(c1: int, c2: int, kernel_size: tuple[int, int], rank: int) -> int:
-    flat_input = c1 * kernel_size[0] * kernel_size[1]
-    return rank * (flat_input + c2)
+def _factor_cost(geometry: ConvGeometry, rank: int) -> int:
+    return rank * (geometry.flat_input + geometry.c2)
 
 
 def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16) -> list[FactorCandidate]:
@@ -150,33 +191,20 @@ def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16)
             continue
         layer_index, module_path = parsed
         sensitivity = _sensitivity(layer_index, module_path)
-        if not torch.isfinite(torch.tensor(sensitivity)):
+        if sensitivity == float("inf"):
             continue
 
-        if isinstance(module, Conv):
-            conv = module.conv
-            if conv.groups != 1 or min(conv.in_channels, conv.out_channels) < 24:
-                continue
-            current_cost = conv.weight.numel()
-            current_rank = None
-        else:
-            conv = module.spatial
-            if conv.groups != 1:
-                continue
-            current_cost = module.spatial.weight.numel() + module.pointwise.weight.numel()
-            current_rank = module.rank
-
-        if current_cost < 4096:
+        matrix, geometry, current_cost, current_rank = _matrix_and_geometry(module)
+        if min(geometry.c1, geometry.c2) < 24 or current_cost < 4096:
             continue
 
-        matrix, c1, c2, kernel, _stride, _dilation, _act, _bn = _matrix_from_module(module)
         singular_values = torch.linalg.svdvals(matrix.cpu())
-        max_rank = min(matrix.shape)
+        max_matrix_rank = min(matrix.shape)
         if current_rank is None:
-            break_even = (current_cost - 1) // (c1 * kernel[0] * kernel[1] + c2)
-            highest = min(max_rank, int(break_even))
+            break_even = (current_cost - 1) // (geometry.flat_input + geometry.c2)
+            highest = min(max_matrix_rank, int(break_even))
         else:
-            highest = min(max_rank, current_rank - rank_step)
+            highest = min(max_matrix_rank, current_rank - rank_step)
         highest = highest // rank_step * rank_step
         floor = max(min_rank, rank_step)
         possible = list(range(highest, floor - 1, -rank_step)) if highest >= floor else []
@@ -189,10 +217,10 @@ def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16)
                 layer_index=layer_index,
                 module_path=module_path,
                 module=module,
+                geometry=geometry,
                 matrix=matrix.cpu(),
                 singular_values=singular_values.cpu(),
                 current_cost=current_cost,
-                current_rank=current_rank,
                 possible_ranks=possible,
                 sensitivity=sensitivity,
             )
@@ -201,7 +229,7 @@ def _candidate_modules(model: nn.Module, rank_step: int = 8, min_rank: int = 16)
 
 
 def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int = 8) -> list[RankChoice]:
-    """Greedily spend singular-value energy to reach a global parameter budget."""
+    """Greedily trade the least singular-value energy for parameter savings."""
     current_total = sum(parameter.numel() for parameter in model.parameters())
     if current_total <= target_parameters:
         return []
@@ -221,28 +249,23 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
             next_index = 0 if state_index is None else state_index + 1
             if next_index >= len(candidate.possible_ranks):
                 continue
+
             next_rank = candidate.possible_ranks[next_index]
-            c1 = candidate.matrix.shape[1] // (
-                candidate.module.conv.kernel_size[0] * candidate.module.conv.kernel_size[1]
-                if isinstance(candidate.module, Conv)
-                else candidate.module.spatial.kernel_size[0] * candidate.module.spatial.kernel_size[1]
-            )
-            c2 = candidate.matrix.shape[0]
-            kernel = candidate.module.conv.kernel_size if isinstance(candidate.module, Conv) else candidate.module.spatial.kernel_size
-            next_cost = _parameter_cost(c1, c2, kernel, next_rank)
+            next_cost = _factor_cost(candidate.geometry, next_rank)
+            total_energy = candidate.singular_values.square().sum().clamp_min(1e-12)
+            next_energy = float(candidate.singular_values[:next_rank].square().sum() / total_energy)
+
             if state_index is None:
                 previous_cost = candidate.current_cost
                 previous_energy = 1.0
             else:
                 previous_rank = candidate.possible_ranks[state_index]
-                previous_cost = _parameter_cost(c1, c2, kernel, previous_rank)
-                total_energy = candidate.singular_values.square().sum().clamp_min(1e-12)
+                previous_cost = _factor_cost(candidate.geometry, previous_rank)
                 previous_energy = float(candidate.singular_values[:previous_rank].square().sum() / total_energy)
+
             saved = previous_cost - next_cost
             if saved <= 0:
                 continue
-            total_energy = candidate.singular_values.square().sum().clamp_min(1e-12)
-            next_energy = float(candidate.singular_values[:next_rank].square().sum() / total_energy)
             energy_loss = max(previous_energy - next_energy, 0.0)
             score = candidate.sensitivity * energy_loss / saved
             proposal = (score, candidate.name, next_index, saved)
@@ -251,9 +274,10 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
 
         if best is None:
             raise RuntimeError(
-                f"Unable to reach {target_parameters:,} parameters with the protected low-rank candidate set; "
-                f"stopped at approximately {predicted_total:,}"
+                f"Unable to reach {target_parameters:,} parameters with the protected candidate set; "
+                f"stopped near {predicted_total:,}"
             )
+
         _, name, next_index, saved = best
         states[name] = next_index
         predicted_total -= saved
@@ -264,14 +288,7 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
             continue
         candidate = candidate_map[name]
         rank = candidate.possible_ranks[index]
-        c1 = candidate.matrix.shape[1] // (
-            candidate.module.conv.kernel_size[0] * candidate.module.conv.kernel_size[1]
-            if isinstance(candidate.module, Conv)
-            else candidate.module.spatial.kernel_size[0] * candidate.module.spatial.kernel_size[1]
-        )
-        c2 = candidate.matrix.shape[0]
-        kernel = candidate.module.conv.kernel_size if isinstance(candidate.module, Conv) else candidate.module.spatial.kernel_size
-        final_cost = _parameter_cost(c1, c2, kernel, rank)
+        final_cost = _factor_cost(candidate.geometry, rank)
         energy = candidate.singular_values.square().sum().clamp_min(1e-12)
         retained = float(candidate.singular_values[:rank].square().sum() / energy)
         choices.append(
@@ -286,10 +303,20 @@ def plan_lowrank_budget(model: nn.Module, target_parameters: int, rank_step: int
 
 
 def _factorized_module(module: Conv | LowRankConv, rank: int) -> LowRankConv:
-    matrix, c1, c2, kernel, stride, dilation, act, bn = _matrix_from_module(module)
+    matrix, geometry, _cost, _current_rank = _matrix_and_geometry(module)
     u, s, vh = torch.linalg.svd(matrix.cpu(), full_matrices=False)
     rank = min(rank, s.numel())
-    replacement = LowRankConv(c1, c2, rank, kernel, stride, d=dilation, act=act, bn=bn)
+    replacement = LowRankConv(
+        geometry.c1,
+        geometry.c2,
+        rank,
+        geometry.kernel,
+        geometry.stride,
+        geometry.padding,
+        geometry.dilation,
+        geometry.act,
+        geometry.bn,
+    )
     replacement.spatial.weight.data.copy_(vh[:rank].reshape_as(replacement.spatial.weight))
     replacement.pointwise.weight.data.copy_((u[:, :rank] * s[:rank]).reshape_as(replacement.pointwise.weight))
     return replacement
@@ -323,7 +350,7 @@ def compress_to_budget(
     *,
     example_inputs: torch.Tensor | None = None,
 ) -> tuple[nn.Module, list[RankChoice]]:
-    """Plan, apply, and validate low-rank compression to an exact global budget."""
+    """Plan, apply, and validate low-rank compression to a global budget."""
     model = model.float().cpu().eval()
     choices = plan_lowrank_budget(model, target_parameters)
     model = apply_lowrank_plan(model, choices)
@@ -347,7 +374,7 @@ def compress_to_budget(
 
 
 def save_lowrank_checkpoint(model: nn.Module, source_checkpoint: str | Path, destination: str | Path) -> Path:
-    """Save a normal Ultralytics checkpoint with EMA replaced by the low-rank graph."""
+    """Save an Ultralytics checkpoint with EMA replaced by the low-rank graph."""
     from ultralytics import YOLO
 
     source_checkpoint = Path(source_checkpoint)
