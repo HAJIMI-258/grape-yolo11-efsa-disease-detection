@@ -19,9 +19,7 @@ from ultralytics.utils import LOGGER
 
 DATA_CFG = Path(r"D:\grape_combo\highsource7_region_yolo_v1\data.yaml")
 MAP_WEIGHTS = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_fast_img640_e150\weights\best.pt")
-AP_WEIGHTS = Path(
-    r"D:\grape_combo\runs\yolo11n_highsource7_region_ap50teacher_img640_e150\weights\best_map50.pt"
-)
+AP_WEIGHTS = Path(r"D:\grape_combo\runs\yolo11n_highsource7_region_ap50teacher_img640_e150\weights\best_map50.pt")
 OUTPUT_DIR = REMOTE / "baseline_soup"
 BASELINE_AP50 = 0.96878
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import torch
 import torch.nn as nn
@@ -105,9 +104,8 @@ def prune_yolo11n_p5(
 ) -> nn.Module:
     """Prune only the deep P5 route of a trained YOLO11n with DepGraph.
 
-    Requires ``torch-pruning==1.6.1``. The dependency graph physically removes
-    coupled BN channels and downstream input channels. Unlike hand-designed width
-    scaling, P3/P4 features and both Detect towers retain their trained outputs.
+    Requires ``torch-pruning==1.6.1``. The dependency graph physically removes coupled BN channels and downstream input
+    channels. Unlike hand-designed width scaling, P3/P4 features and both Detect towers retain their trained outputs.
     """
     try:
         import torch_pruning as tp
@@ -123,9 +121,7 @@ def prune_yolo11n_p5(
         block = model.model[target.layer_index]
         root = _nested_module(block, target.module_path)
         if not isinstance(root, nn.Conv2d):
-            raise TypeError(
-                f"Layer {target.layer_index}.{target.module_path} must be Conv2d, got {type(root)!r}"
-            )
+            raise TypeError(f"Layer {target.layer_index}.{target.module_path} must be Conv2d, got {type(root)!r}")
         if root.out_channels < target.target_channels:
             raise ValueError(
                 f"Target {target.target_channels} exceeds current channels {root.out_channels} "
@@ -142,9 +138,7 @@ def prune_yolo11n_p5(
         indices = _least_important_output_channels(block, target.module_path, prune_count)
         group = graph.get_pruning_group(root, tp.prune_conv_out_channels, idxs=indices)
         if not graph.check_pruning_group(group):
-            raise RuntimeError(
-                f"Invalid pruning group at layer {target.layer_index}.{target.module_path}: {group}"
-            )
+            raise RuntimeError(f"Invalid pruning group at layer {target.layer_index}.{target.module_path}: {group}")
         group.prune()
 
     _refresh_metadata(model)
