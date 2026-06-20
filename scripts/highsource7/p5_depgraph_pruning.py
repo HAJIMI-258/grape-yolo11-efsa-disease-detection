@@ -20,6 +20,9 @@ class P5PruningProfile:
 
 PROFILES = {
     # Approximate parameter counts are for the seven-class HighSource7 head.
+    # Start with a very small cut because AP50 preservation is the hard constraint.
+    "p251": P5PruningProfile("p251", 248, 128, 248, 2_506_905),
+    "p242": P5PruningProfile("p242", 240, 128, 240, 2_424_749),
     "p233": P5PruningProfile("p233", 232, 120, 232, 2_333_649),
     "p226": P5PruningProfile("p226", 224, 120, 224, 2_255_845),
     "p210": P5PruningProfile("p210", 208, 112, 208, 2_095_773),
