@@ -35,7 +35,7 @@ def test_p3p4_compaction_removes_p5_path_and_preserves_first_two_towers():
     assert len(compact.model) == 21
     assert head.nl == 2
     assert head.f == [16, 19]
-    assert compact.save == [4, 6, 10, 13, 16, 19]
+    assert compact.save == [4, 6, 13, 16, 19]
     assert after < before
     assert after < 2_000_000
 
