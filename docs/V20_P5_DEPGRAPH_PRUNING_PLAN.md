@@ -48,13 +48,13 @@ D:\Python311\python.exe scripts\highsource7\build_yolo11n_baseline_soup_highsour
 ## Compression ladder
 
 | Profile | Deep P5 | Deep downsample | P5 head | Expected params | Approx. reduction |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `p251` | 248 | 128 | 248 | 2.507M | 3% |
-| `p242` | 240 | 128 | 240 | 2.425M | 6% |
-| `p233` | 232 | 120 | 232 | 2.334M | 10% |
-| `p226` | 224 | 120 | 224 | 2.256M | 13% |
-| `p210` | 208 | 112 | 208 | 2.096M | 19% |
-| `p196` | 192 | 112 | 192 | 1.955M | 25% |
+| ------- | ------: | --------------: | ------: | --------------: | ----------------: |
+| `p251`  |     248 |             128 |     248 |          2.507M |                3% |
+| `p242`  |     240 |             128 |     240 |          2.425M |                6% |
+| `p233`  |     232 |             120 |     232 |          2.334M |               10% |
+| `p226`  |     224 |             120 |     224 |          2.256M |               13% |
+| `p210`  |     208 |             112 |     208 |          2.096M |               19% |
+| `p196`  |     192 |             112 |     192 |          1.955M |               25% |
 
 Run only `p251` first. A smaller profile is allowed only after the previous profile reaches or exceeds the baseline AP50. This turns the experiment into a measured no-drop compression frontier rather than another large one-shot cut.
 
