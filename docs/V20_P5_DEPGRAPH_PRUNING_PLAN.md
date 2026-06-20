@@ -35,6 +35,16 @@ Pruned output projections:
 
 Channels are ranked with trained filter L2 energy multiplied by paired BN scale. Torch-Pruning DepGraph removes the coupled BN channels and downstream input channels, preserving graph consistency. This is not the prefix slicing used by V17.
 
+## Optional source-checkpoint soup
+
+Before pruning, `build_yolo11n_baseline_soup_highsource7.py` can interpolate the AP50-selected and mAP50-95-selected full YOLO11n checkpoints. It validates each interpolation coefficient and writes `D:\grape_combo\baseline_soup\soup_results.csv`.
+
+Use the soup as `GRAPE_PRUNE_SOURCE` only when its measured AP50 is strictly greater than `0.96878`. Otherwise prune the original AP50-selected checkpoint. The soup is optional and does not change deployment parameters.
+
+```powershell
+D:\Python311\python.exe scripts\highsource7\build_yolo11n_baseline_soup_highsource7.py
+```
+
 ## Compression ladder
 
 | Profile | Deep P5 | Deep downsample | P5 head | Expected params | Approx. reduction |
@@ -48,7 +58,7 @@ Run only `p233` first. A smaller profile is allowed only after the previous prof
 
 ## Recovery protocol
 
-- source: AP50-selected full YOLO11n checkpoint;
+- source: AP50-selected full YOLO11n checkpoint, or a validated better soup;
 - teacher: original mAP50-95-selected YOLO11n checkpoint;
 - image size: 640;
 - epochs: 150;
@@ -71,6 +81,9 @@ git checkout codex/v20-p5-depgraph-pruning
 $env:PYTHONPATH="D:\grape_combo\grape-yolo11-efsa-disease-detection;D:\grape_combo"
 $env:GRAPE_P5_PROFILE="p233"
 
+# Set this only if the soup scan beats the baseline.
+# $env:GRAPE_PRUNE_SOURCE="D:\grape_combo\baseline_soup\yolo11n_highsource7_soup_best.pt"
+
 D:\Python311\python.exe scripts\highsource7\dryrun_yolo11n_p5prune_v20_remote.py
 ```
 
@@ -84,6 +97,8 @@ Run directly from the terminal. Do not create a recurring scheduled task.
 $env:GRAPE_P5_PROFILE="p233"
 D:\Python311\python.exe scripts\highsource7\train_yolo11n_p5prune_v20_highsource7_region_remote.py
 ```
+
+The training script first validates the physically pruned checkpoint before recovery. This separates immediate pruning damage from recovery-training effects.
 
 ## Decision rule
 
