@@ -116,6 +116,13 @@ def prune_yolo11n_p5(
         raise RuntimeError("Install the pinned dependency with: pip install -r requirements-pruning.txt") from exc
 
     model = model.float().cpu().eval()
+    # Ultralytics strips optimizer state and may serialize trained checkpoints with
+    # every parameter marked non-trainable. Torch-Pruning builds its dependency
+    # graph from autograd edges, so those parameters must require gradients while
+    # the graph is traced. The recovery trainer applies its own layer-freeze policy
+    # after pruning.
+    for parameter in model.parameters():
+        parameter.requires_grad_(True)
     if example_inputs is None:
         example_inputs = torch.zeros(1, 3, 640, 640, dtype=torch.float32)
     example_inputs = example_inputs.to(next(model.parameters()).device)

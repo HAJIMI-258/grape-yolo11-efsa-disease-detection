@@ -22,7 +22,7 @@ SOURCE = Path(
         r"D:\grape_combo\runs\yolo11n_highsource7_region_ap50teacher_img640_e150\weights\best_map50.pt",
     )
 )
-PROFILE_NAME = os.environ.get("GRAPE_P5_PROFILE", "p233").lower()
+PROFILE_NAME = os.environ.get("GRAPE_P5_PROFILE", "p251").lower()
 
 
 def main() -> None:
