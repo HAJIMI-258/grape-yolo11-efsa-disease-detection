@@ -23,8 +23,8 @@ def _rebuild_save_list(layers: nn.Sequential) -> list[int]:
 def compact_p251_to_p3p4(model: nn.Module) -> nn.Module:
     """Remove only the bottom-up P5 detection path from a trained p251 model.
 
-    Layers 0-19, including the complete deep backbone and top-down P3/P4 neck,
-    are retained byte-for-byte. Layers 20-22 and the third Detect tower are
+    Layers 0-19, including the complete deep backbone and top-down P3/P4 neck, are retained byte-for-byte. Layers 20-22
+    and the third Detect tower are
     removed. The first two box/classification towers keep their trained weights.
     """
     model = model.float().cpu().eval()
@@ -33,7 +33,9 @@ def compact_p251_to_p3p4(model: nn.Module) -> nn.Module:
 
     old_head = model.model[-1]
     if not isinstance(old_head, Detect) or old_head.nl != 3:
-        raise TypeError(f"Expected a three-level Detect head, got {type(old_head)!r} with nl={getattr(old_head, 'nl', None)}")
+        raise TypeError(
+            f"Expected a three-level Detect head, got {type(old_head)!r} with nl={getattr(old_head, 'nl', None)}"
+        )
 
     retained = list(model.model[:20])
     new_head = copy.deepcopy(old_head)
