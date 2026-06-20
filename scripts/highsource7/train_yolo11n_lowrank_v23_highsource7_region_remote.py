@@ -14,8 +14,8 @@ if REPO.exists():
 sys.path.insert(2, str(REMOTE))
 
 # Import before YOLO loads a V23 checkpoint so pickle can resolve LowRankConv.
-from lowrank_compression_v23 import compress_to_budget, save_lowrank_checkpoint
 from highsource7_ap50_checkpoint import AP50CheckpointMixin
+from lowrank_compression_v23 import compress_to_budget, save_lowrank_checkpoint
 from train_yolo11n_gapkd_full_highsource7_region_remote import FullGapDistillCriterion
 
 from ultralytics import YOLO

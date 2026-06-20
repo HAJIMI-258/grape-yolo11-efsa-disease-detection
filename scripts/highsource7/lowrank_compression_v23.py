@@ -13,8 +13,8 @@ from ultralytics.nn.modules.conv import Conv
 class LowRankConv(nn.Module):
     """SVD-factorized replacement for an Ultralytics Conv block.
 
-    The block preserves the original output channels, stride, padding, dilation,
-    batch normalization, and activation. Only the internal matrix rank changes.
+    The block preserves the original output channels, stride, padding, dilation, batch normalization, and activation.
+    Only the internal matrix rank changes.
     """
 
     def __init__(
