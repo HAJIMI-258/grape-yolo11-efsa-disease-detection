@@ -85,9 +85,7 @@ class TwoScaleRetentionCriterion(GapFeatureDistillCriterion):
         batch, classes, _ = student_preds["scores"].shape
         student_p4 = student_preds["scores"][..., n3 : n3 + n4].reshape(batch, classes, h4, w4)
         student_p4 = F.adaptive_max_pool2d(student_p4, output_size=(h5, w5))
-        teacher_p5 = teacher_preds["scores"][..., n3 + n4 : n3 + n4 + n5].detach().reshape(
-            batch, classes, h5, w5
-        )
+        teacher_p5 = teacher_preds["scores"][..., n3 + n4 : n3 + n4 + n5].detach().reshape(batch, classes, h5, w5)
 
         teacher_prob = teacher_p5.sigmoid()
         confidence, class_index = teacher_prob.max(dim=1, keepdim=True)
