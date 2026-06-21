@@ -33,28 +33,28 @@ checkpoint: weights\best_map50.pt
 
 Explicit validation of the AP50-selected checkpoint gives:
 
-| Metric | Value |
-| --- | ---: |
-| raw parameters | `2,298,717` |
-| fused validation parameters | `2,292,837` |
-| GFLOPs | `6.17` raw / `6.1` fused |
-| Precision | `0.94272` |
-| Recall | `0.94243` |
-| AP50 | `0.97154` |
-| AP50-95 at the AP50 checkpoint | `0.81055` |
-| independent best AP50-95 in `results.csv` | `0.82432` |
+| Metric                                    |                    Value |
+| ----------------------------------------- | -----------------------: |
+| raw parameters                            |              `2,298,717` |
+| fused validation parameters               |              `2,292,837` |
+| GFLOPs                                    | `6.17` raw / `6.1` fused |
+| Precision                                 |                `0.94272` |
+| Recall                                    |                `0.94243` |
+| AP50                                      |                `0.97154` |
+| AP50-95 at the AP50 checkpoint            |                `0.81055` |
+| independent best AP50-95 in `results.csv` |                `0.82432` |
 
 Per-class AP50 for the AP50-selected checkpoint:
 
-| Class | AP50 | AP50-95 |
-| --- | ---: | ---: |
-| `black_rot` | `0.97642` | `0.92682` |
+| Class                |      AP50 |   AP50-95 |
+| -------------------- | --------: | --------: |
+| `black_rot`          | `0.97642` | `0.92682` |
 | `esca_black_measles` | `0.99500` | `0.99339` |
-| `healthy` | `0.96028` | `0.86170` |
-| `leaf_blight` | `0.99500` | `0.99482` |
-| `brown_spot` | `0.95322` | `0.69009` |
-| `downy_mildew` | `0.96447` | `0.65530` |
-| `mites_disease` | `0.95637` | `0.55172` |
+| `healthy`            | `0.96028` | `0.86170` |
+| `leaf_blight`        | `0.99500` | `0.99482` |
+| `brown_spot`         | `0.95322` | `0.69009` |
+| `downy_mildew`       | `0.96447` | `0.65530` |
+| `mites_disease`      | `0.95637` | `0.55172` |
 
 Compared with the full YOLO11n baseline, V23 p2300 improves AP50 from `0.96878` to `0.97154` while reducing parameters from `2.591M` to `2.299M` raw (`2.293M` fused). Compared with V22 h48, it slightly improves AP50 from `0.97115` to `0.97154` and removes another roughly `0.10M` parameters.
 
