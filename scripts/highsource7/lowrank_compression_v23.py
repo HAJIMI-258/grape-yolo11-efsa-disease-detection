@@ -103,9 +103,8 @@ def _is_deep_relaxable_candidate(candidate: FactorCandidate) -> bool:
 def _energy_floor(candidate: FactorCandidate, base: float, deep_floor: float | None) -> float:
     """Return the retained-energy floor for one candidate.
 
-    The global floor remains the default. A lower deep floor can be enabled for
-    late compression stages, while known fragile context and fine-grained
-    classification modules remain at a stricter floor.
+    The global floor remains the default. A lower deep floor can be enabled for late compression stages, while known
+    fragile context and fine-grained classification modules remain at a stricter floor.
     """
     floor = base
     if candidate.layer_index == 9 and candidate.module_path.startswith("cv2"):
