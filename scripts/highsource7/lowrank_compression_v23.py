@@ -91,6 +91,34 @@ class RankChoice:
     retained_energy: float
 
 
+def _is_deep_relaxable_candidate(candidate: FactorCandidate) -> bool:
+    """Allow a lower energy floor only on deep/context modules with low paper risk."""
+    if candidate.layer_index in {7, 8, 10, 20, 22}:
+        return True
+    if candidate.layer_index == 9 and not candidate.module_path.startswith("cv2"):
+        return True
+    return False
+
+
+def _energy_floor(candidate: FactorCandidate, base: float, deep_floor: float | None) -> float:
+    """Return the retained-energy floor for one candidate.
+
+    The global floor remains the default. A lower deep floor can be enabled for
+    late compression stages, while known fragile context and fine-grained
+    classification modules remain at a stricter floor.
+    """
+    floor = base
+    if candidate.layer_index == 9 and candidate.module_path.startswith("cv2"):
+        floor = max(floor, 0.985)
+    if candidate.layer_index == 23 and (
+        candidate.module_path.startswith("cv2.0") or candidate.module_path.startswith("cv2.1")
+    ):
+        floor = max(floor, 0.980)
+    if deep_floor is not None and _is_deep_relaxable_candidate(candidate):
+        floor = min(floor, deep_floor)
+    return floor
+
+
 def _nested_module(module: nn.Module, path: str) -> nn.Module:
     current = module
     if not path:
@@ -236,6 +264,7 @@ def plan_lowrank_budget(
     target_parameters: int,
     rank_step: int = 8,
     min_retained_energy: float = 0.95,
+    deep_min_retained_energy: float | None = None,
 ) -> list[RankChoice]:
     """Greedily trade the least singular-value energy for parameter savings."""
     current_total = sum(parameter.numel() for parameter in model.parameters())
@@ -262,7 +291,8 @@ def plan_lowrank_budget(
             next_cost = _factor_cost(candidate.geometry, next_rank)
             total_energy = candidate.singular_values.square().sum().clamp_min(1e-12)
             next_energy = float(candidate.singular_values[:next_rank].square().sum() / total_energy)
-            if next_energy < min_retained_energy:
+            candidate_floor = _energy_floor(candidate, min_retained_energy, deep_min_retained_energy)
+            if next_energy < candidate_floor:
                 continue
 
             if state_index is None:
@@ -283,9 +313,12 @@ def plan_lowrank_budget(
                 best = proposal
 
         if best is None:
+            floor_text = f"{min_retained_energy:.3f}"
+            if deep_min_retained_energy is not None:
+                floor_text += f", deep={deep_min_retained_energy:.3f}"
             raise RuntimeError(
                 f"Unable to reach {target_parameters:,} parameters with the protected candidate set; "
-                f"stopped near {predicted_total:,} with min_retained_energy={min_retained_energy:.3f}"
+                f"stopped near {predicted_total:,} with min_retained_energy={floor_text}"
             )
 
         _, name, next_index, saved = best
@@ -360,10 +393,16 @@ def compress_to_budget(
     *,
     example_inputs: torch.Tensor | None = None,
     min_retained_energy: float = 0.95,
+    deep_min_retained_energy: float | None = None,
 ) -> tuple[nn.Module, list[RankChoice]]:
     """Plan, apply, and validate low-rank compression to a global budget."""
     model = model.float().cpu().eval()
-    choices = plan_lowrank_budget(model, target_parameters, min_retained_energy=min_retained_energy)
+    choices = plan_lowrank_budget(
+        model,
+        target_parameters,
+        min_retained_energy=min_retained_energy,
+        deep_min_retained_energy=deep_min_retained_energy,
+    )
     model = apply_lowrank_plan(model, choices)
     if example_inputs is None:
         example_inputs = torch.zeros(1, 3, 640, 640)

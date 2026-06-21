@@ -54,3 +54,38 @@ def test_progressive_factorization_can_lower_existing_rank():
     assert second.spatial.weight.numel() + second.pointwise.weight.numel() < (
         first.spatial.weight.numel() + first.pointwise.weight.numel()
     )
+
+
+def test_stratified_energy_floor_protects_fragile_modules():
+    module = _load_module()
+    block = Conv(128, 128, 3)
+    matrix, geometry, current_cost, _ = module._matrix_and_geometry(block)
+    candidate = module.FactorCandidate(
+        name="model.9.cv2.conv",
+        layer_index=9,
+        module_path="cv2.conv",
+        module=block,
+        geometry=geometry,
+        matrix=matrix,
+        singular_values=torch.linalg.svdvals(matrix.cpu()),
+        current_cost=current_cost,
+        possible_ranks=[64, 56, 48],
+        sensitivity=1.0,
+    )
+
+    assert module._energy_floor(candidate, 0.97, 0.96) == 0.985
+
+    relaxed = module.FactorCandidate(
+        name="model.20.conv",
+        layer_index=20,
+        module_path="conv",
+        module=block,
+        geometry=geometry,
+        matrix=matrix,
+        singular_values=torch.linalg.svdvals(matrix.cpu()),
+        current_cost=current_cost,
+        possible_ranks=[64, 56, 48],
+        sensitivity=1.0,
+    )
+
+    assert module._energy_floor(relaxed, 0.97, 0.96) == 0.96
