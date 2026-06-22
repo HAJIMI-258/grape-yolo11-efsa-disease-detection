@@ -6,7 +6,6 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-
 from lowrank_compression_v23 import LowRankConv
 
 
@@ -94,8 +93,8 @@ def _rank_importance(module: LowRankConv) -> torch.Tensor:
 
     if module.spatial.weight.grad is not None and module.pointwise.weight.grad is not None:
         spatial_grad = module.spatial.weight.grad.detach().float().flatten(1)
-        pointwise_grad = module.pointwise.weight.grad.detach().float().flatten(0, 1).view(
-            module.pointwise.out_channels, -1
+        pointwise_grad = (
+            module.pointwise.weight.grad.detach().float().flatten(0, 1).view(module.pointwise.out_channels, -1)
         )
         fisher = (spatial * spatial_grad).pow(2).sum(1) + (pointwise * pointwise_grad).pow(2).sum(0)
         score = score + fisher.sqrt()

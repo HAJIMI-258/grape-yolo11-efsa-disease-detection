@@ -48,17 +48,17 @@ Current dry runs used the weight-only form. P3/P4 classification towers and shal
 
 All runs below are explicit validation runs on the fixed HighSource7 validation split at `imgsz=640`.
 
-| Source checkpoint | Target | Params | GFLOPs | Precision | Recall | AP50 | AP50-95 | Decision |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| V23 p1990 dry-run | 1.95M | `1.944M` | `5.7` | `0.942` | `0.945` | `0.97337` | `0.81951` | Smaller than V23 p1990, AP50 still above baseline |
-| V23 p1990 dry-run | 1.90M | `1.899M` | `5.6` | `0.944` | `0.941` | `0.97065` | `0.81551` | More compression, but AP50 drop becomes visible |
-| V23 p2200 trained | 1.99M | `1.988M` | `5.8` | `0.955` | `0.928` | `0.96868` | `0.80767` | Rejected; direct p2200 graph-prune hurts recall |
+| Source checkpoint | Target |   Params | GFLOPs | Precision |  Recall |      AP50 |   AP50-95 | Decision                                          |
+| ----------------- | -----: | -------: | -----: | --------: | ------: | --------: | --------: | ------------------------------------------------- |
+| V23 p1990 dry-run |  1.95M | `1.944M` |  `5.7` |   `0.942` | `0.945` | `0.97337` | `0.81951` | Smaller than V23 p1990, AP50 still above baseline |
+| V23 p1990 dry-run |  1.90M | `1.899M` |  `5.6` |   `0.944` | `0.941` | `0.97065` | `0.81551` | More compression, but AP50 drop becomes visible   |
+| V23 p2200 trained |  1.99M | `1.988M` |  `5.8` |   `0.955` | `0.928` | `0.96868` | `0.80767` | Rejected; direct p2200 graph-prune hurts recall   |
 
 Reference points:
 
-| Model | Params | AP50 | AP50-95 |
-| --- | ---: | ---: | ---: |
-| YOLO11n baseline | `2.591M` | `0.96878` | `0.82287` |
+| Model             |   Params |      AP50 |   AP50-95 |
+| ----------------- | -------: | --------: | --------: |
+| YOLO11n baseline  | `2.591M` | `0.96878` | `0.82287` |
 | V23 p1990 dry-run | `1.990M` | `0.97450` | `0.81759` |
 
 ## Interpretation
