@@ -60,12 +60,12 @@ Compared with the full YOLO11n baseline, V23 p2300 improves AP50 from `0.96878` 
 
 The follow-up progressive stages produced the following explicit validation results:
 
-| Stage                     | Raw Params | GFLOPs | Precision |  Recall |      AP50 | AP50-95 | Decision                                      |
-| ------------------------- | ---------: | -----: | --------: | ------: | --------: | ------: | --------------------------------------------- |
-| V23 p2300 trained         |   `2.299M` | `6.17` |   `0.943` | `0.942` | `0.97154` | `0.811` | Valid bridge                                  |
-| V23 p2200 trained         |   `2.197M` | `6.06` |   `0.943` | `0.958` | `0.97474` | `0.814` | Best AP50 above 2M                            |
-| V23 p2100 trained         |   `2.098M` | `5.91` |   `0.964` | `0.938` | `0.97277` | `0.822` | Best AP50-95 among compressed checkpoints     |
-| V23 p1990 dry-run         |   `1.990M` |  `5.7` |   `0.953` | `0.936` | `0.97450` | `0.818` | Current sub-2M AP50 candidate                 |
+| Stage                      | Raw Params | GFLOPs | Precision |  Recall |      AP50 | AP50-95 | Decision                                     |
+| -------------------------- | ---------: | -----: | --------: | ------: | --------: | ------: | -------------------------------------------- |
+| V23 p2300 trained          |   `2.299M` | `6.17` |   `0.943` | `0.942` | `0.97154` | `0.811` | Valid bridge                                 |
+| V23 p2200 trained          |   `2.197M` | `6.06` |   `0.943` | `0.958` | `0.97474` | `0.814` | Best AP50 above 2M                           |
+| V23 p2100 trained          |   `2.098M` | `5.91` |   `0.964` | `0.938` | `0.97277` | `0.822` | Best AP50-95 among compressed checkpoints    |
+| V23 p1990 dry-run          |   `1.990M` |  `5.7` |   `0.953` | `0.936` | `0.97450` | `0.818` | Current sub-2M AP50 candidate                |
 | V23 p1990 trained recovery |   `1.990M` |  `5.7` |   `0.946` | `0.947` | `0.97201` | `0.815` | Recovery reduced AP50; archive as diagnostic |
 
 The current final sub-2M candidate is therefore:
