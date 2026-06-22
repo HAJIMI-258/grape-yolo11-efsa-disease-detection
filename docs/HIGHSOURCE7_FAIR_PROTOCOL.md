@@ -52,7 +52,11 @@ The table records independent best validation metrics from each run's `results.c
 | `yolo11n_highsource7_region_fast_img640_e150`                                     | 2.591M |    6.3 |     `0.96878` |     `0.82287` | Full YOLO11n baseline                                                         |
 | `yolo11n_p5prune_v20_p251_highsource7_region_img640_e150`                         | 2.549M |    6.3 |     `0.97343` |     `0.81801` | P5-aware structured pruning; AP50 improved, but compression was too small     |
 | `yolo11n_p5internal_v22_h48_highsource7_region_img640_e150`                       | 2.399M |    6.2 |     `0.97115` |     `0.81974` | Three-scale internal P5 compression; viable but still not lightweight enough  |
-| `yolo11n_lowrank_v23_p2300k_highsource7_region_img640_e150`                       | 2.299M |   6.17 | **`0.97154`** |     `0.82432` | Current best compressed AP50; AP50 checkpoint has AP50-95 `0.81055`           |
+| `yolo11n_lowrank_v23_p2300k_highsource7_region_img640_e150`                       | 2.299M |   6.17 |     `0.97154` |     `0.82432` | First successful V23 bridge; AP50 checkpoint has AP50-95 `0.81055`            |
+| `yolo11n_lowrank_v23_p2200k_highsource7_region_img640_e150`                       | 2.197M |   6.06 | **`0.97474`** |     `0.82093` | Highest AP50 trained V23 checkpoint, but still above 2M                       |
+| `yolo11n_lowrank_v23_p2100k_highsource7_region_img640_e150`                       | 2.098M |   5.91 |     `0.97277` |     `0.82257` | Best localization-quality compressed checkpoint; still above 2M               |
+| `yolo11n_v23_p1990k_dryrun.pt`                                                    | 1.990M |    5.7 | **`0.97450`** |     `0.81759` | Current final sub-2M candidate; validates without recovery training           |
+| `yolo11n_lowrank_v23_p1990k_highsource7_region_img640_e150`                       | 1.990M |    5.7 |     `0.97201` |     `0.81999` | 150-epoch recovery lowered AP50; archive as diagnostic                        |
 | `yolo11n_gapkd_full_highsource7_region_img640_e150`                               | 2.591M |    6.3 |        failed |        failed | Full YOLO11n + conservative teacher KD; stopped after host-memory failure     |
 | `yolo11n_width20_kd_highsource7_region_img640_e150`                               | 1.218M |   4.44 |     `0.94158` |     `0.78245` | 1.2M student + head KD                                                        |
 | `yolo11n_width20_kdattn_highsource7_region_img640_e150`                           | 1.218M |   4.44 |     `0.93833` |     `0.77971` | All-map feature-attention KD; rejected                                        |
@@ -91,10 +95,10 @@ Weak-class AP50 remained poor: `healthy=0.896`, `brown_spot=0.904`, and `mites_d
 ## Current Decision
 
 1. Keep `yolo11n_width20_gapkd_v14_highsource7_region_img640_e150` as the historical best 1.2M line, not the final main result.
-2. Use `yolo11n_lowrank_v23_p2300k_highsource7_region_img640_e150` as the current best compressed AP50 checkpoint: it reaches `0.97154` AP50 with `2.299M` raw parameters.
+2. Use `D:\grape_combo\lowrank_models\yolo11n_v23_p1990k_dryrun.pt` as the current final sub-2M candidate: it reaches `0.97450` AP50 with `1.990M` raw parameters.
 3. Treat v16 and v17 as negative-result/counterexample experiments in the ablation discussion.
 4. Do not continue AP50-teacher selection, stronger-teacher slim initialization, hard-negative suppression, full-run feature KD, or the GEW slim-neck migration.
-5. No completed model below 2.0M parameters is validated yet; V23 p2300 is a successful bridge, not the final sub-2M lightweight model.
+5. Treat p2200 as the strongest AP50 trained compressed checkpoint above 2M, p2100 as the strongest AP50-95 checkpoint, and p1990 dry-run as the current sub-2M endpoint. The p1990 recovery run is a negative result because AP50 decreased after 150 epochs.
 
 ## GEW-YOLO Paper Migration
 

@@ -28,6 +28,7 @@ TARGET = int(os.environ.get("GRAPE_V23_TARGET", "2100000"))
 MIN_ENERGY = float(os.environ.get("GRAPE_V23_MIN_ENERGY", "0.95"))
 DEEP_MIN_ENERGY = os.environ.get("GRAPE_V23_DEEP_MIN_ENERGY")
 DEEP_MIN_ENERGY_VALUE = float(DEEP_MIN_ENERGY) if DEEP_MIN_ENERGY else None
+RANK_STEP = int(os.environ.get("GRAPE_V23_RANK_STEP", "8"))
 OUTPUT = REMOTE / "lowrank_models" / f"yolo11n_v23_p{TARGET // 1000}k_dryrun.pt"
 
 
@@ -43,6 +44,7 @@ def main() -> None:
         TARGET,
         min_retained_energy=MIN_ENERGY,
         deep_min_retained_energy=DEEP_MIN_ENERGY_VALUE,
+        rank_step=RANK_STEP,
     )
     after = sum(parameter.numel() for parameter in compressed.parameters())
     save_lowrank_checkpoint(compressed, SOURCE, OUTPUT)
@@ -79,6 +81,7 @@ def main() -> None:
     print("target_parameters", TARGET)
     print("min_retained_energy_limit", MIN_ENERGY)
     print("deep_min_retained_energy_limit", DEEP_MIN_ENERGY_VALUE)
+    print("rank_step", RANK_STEP)
     print("params_before", before)
     print("params_after", after)
     print("reduction_percent", 100.0 * (before - after) / before)

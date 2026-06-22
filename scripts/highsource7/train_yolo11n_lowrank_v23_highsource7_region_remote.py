@@ -39,6 +39,7 @@ TARGET_PARAMETERS = int(os.environ.get("GRAPE_V23_TARGET", "2100000"))
 MIN_ENERGY = float(os.environ.get("GRAPE_V23_MIN_ENERGY", "0.95"))
 DEEP_MIN_ENERGY = os.environ.get("GRAPE_V23_DEEP_MIN_ENERGY")
 DEEP_MIN_ENERGY_VALUE = float(DEEP_MIN_ENERGY) if DEEP_MIN_ENERGY else None
+RANK_STEP = int(os.environ.get("GRAPE_V23_RANK_STEP", "8"))
 BASELINE_AP50 = 0.96878
 V22_AP50 = 0.97115
 
@@ -132,10 +133,12 @@ def main() -> None:
         TARGET_PARAMETERS,
         min_retained_energy=MIN_ENERGY,
         deep_min_retained_energy=DEEP_MIN_ENERGY_VALUE,
+        rank_step=RANK_STEP,
     )
     after = sum(parameter.numel() for parameter in compressed.parameters())
     LOGGER.info("V23 min retained energy limit: %.3f", MIN_ENERGY)
     LOGGER.info("V23 deep retained energy limit: %s", DEEP_MIN_ENERGY_VALUE)
+    LOGGER.info("V23 rank step: %d", RANK_STEP)
 
     checkpoint = REMOTE / "lowrank_models" / f"yolo11n_v23_{_target_tag()}_before_recovery.pt"
     save_lowrank_checkpoint(compressed, SOURCE, checkpoint)

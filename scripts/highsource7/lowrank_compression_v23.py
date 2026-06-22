@@ -393,12 +393,14 @@ def compress_to_budget(
     example_inputs: torch.Tensor | None = None,
     min_retained_energy: float = 0.95,
     deep_min_retained_energy: float | None = None,
+    rank_step: int = 8,
 ) -> tuple[nn.Module, list[RankChoice]]:
     """Plan, apply, and validate low-rank compression to a global budget."""
     model = model.float().cpu().eval()
     choices = plan_lowrank_budget(
         model,
         target_parameters,
+        rank_step=rank_step,
         min_retained_energy=min_retained_energy,
         deep_min_retained_energy=deep_min_retained_energy,
     )
