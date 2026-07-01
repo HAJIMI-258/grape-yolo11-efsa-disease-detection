@@ -29,7 +29,7 @@ def main() -> None:
     if args.pretrained:
         try:
             model.load(args.pretrained)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print(f"Partial pretrained loading failed, continuing from YAML init: {exc}")
     model.train(
         data=args.data,
