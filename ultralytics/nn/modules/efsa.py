@@ -10,12 +10,12 @@ from __future__ import annotations
 import math
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from .conv import Conv
 
-__all__ = ("EFSAEnhance", "CARAFEUp", "BiFPNFuse", "CoordECA")
+__all__ = ("BiFPNFuse", "CARAFEUp", "CoordECA", "EFSAEnhance")
 
 
 def _inverse_tanh_clamped(value: float) -> float:
