@@ -36,7 +36,7 @@ pytest -q tests/test_yolo11_efsa_build.py
 ```
 
 ```bash
-python - <<'PY'
+python - << 'PY'
 from ultralytics import YOLO
 m = YOLO('configs/models/yolo11n_efsa_grape.yaml')
 m.info()
@@ -95,4 +95,3 @@ python scripts/val.py \
 python scripts/benchmark_fps.py --weights runs/grape/yolo11n_efsa_768_seed42/weights/best.pt --imgsz 768 --device 0
 python scripts/export_onnx.py --weights runs/grape/yolo11n_efsa_768_seed42/weights/best.pt --imgsz 768
 ```
-
